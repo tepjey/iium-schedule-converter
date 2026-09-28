@@ -136,6 +136,20 @@ export const blockColors = (courseColor, theme) => {
   };
 };
 
+// Tablets are laid out at this CSS width and scaled up, rather than at their native
+// 2x width (~800pt), so the timetable text stays a readable size on the bigger screen.
+const TABLET_LAYOUT_WIDTH = 540;
+
+// iPad sizes are portrait. iPadOS crops the wallpaper when the iPad is turned sideways.
+const ipad = (id, name, width, height) => ({
+  id,
+  group: 'iPad',
+  name,
+  width,
+  height,
+  pixelRatio: width / TABLET_LAYOUT_WIDTH,
+});
+
 // Output pixel sizes for the wallpaper export. The on-screen layout is rendered at
 // width / pixelRatio CSS pixels and scaled up on export, like a real phone screen.
 // iPhone ratios match the device (2x or 3x). Android phones vary, so they use 3x (2x for
@@ -157,6 +171,16 @@ export const WALLPAPER_PRESETS = [
   { id: 'iphone-11', group: 'iPhone', name: 'iPhone XR, 11', width: 828, height: 1792, pixelRatio: 2 },
   { id: 'iphone-se', group: 'iPhone', name: 'iPhone SE (2nd, 3rd gen), 8', width: 750, height: 1334, pixelRatio: 2 },
 
+  ipad('ipad-pro-13-m4', 'iPad Pro 13" (M4)', 2064, 2752),
+  ipad('ipad-pro-12-9', 'iPad Pro 12.9", iPad Air 13"', 2048, 2732),
+  ipad('ipad-pro-11-m4', 'iPad Pro 11" (M4)', 1668, 2420),
+  ipad('ipad-pro-11', 'iPad Pro 11" (1st–4th gen)', 1668, 2388),
+  ipad('ipad-air-11', 'iPad Air 11", Air (4th, 5th gen), iPad (10th gen, A16)', 1640, 2360),
+  ipad('ipad-10-5', 'iPad Air (3rd gen), iPad Pro 10.5"', 1668, 2224),
+  ipad('ipad-10-2', 'iPad (7th–9th gen)', 1620, 2160),
+  ipad('ipad-mini', 'iPad mini (6th gen, A17 Pro)', 1488, 2266),
+  ipad('ipad-9-7', 'iPad (5th, 6th gen), iPad Air 2', 1536, 2048),
+
   { id: 'android', group: 'Android', name: 'Most Android phones (1080 × 2400)', width: 1080, height: 2400, pixelRatio: 3 },
   { id: 'android-2340', group: 'Android', name: 'Samsung Galaxy S22–S25 (1080 × 2340)', width: 1080, height: 2340, pixelRatio: 3 },
   { id: 'android-ultra', group: 'Android', name: 'Samsung Galaxy S24/S25 Ultra (1440 × 3120)', width: 1440, height: 3120, pixelRatio: 3 },
@@ -164,7 +188,7 @@ export const WALLPAPER_PRESETS = [
   { id: 'android-hd', group: 'Android', name: 'Budget HD+ phones (720 × 1600)', width: 720, height: 1600, pixelRatio: 2 },
 ];
 
-export const WALLPAPER_GROUPS = ['Auto', 'iPhone', 'Android'];
+export const WALLPAPER_GROUPS = ['Auto', 'iPhone', 'iPad', 'Android'];
 
 // Pixel size shown next to a preset in the picker, e.g. "1179 × 2556".
 export const presetLabel = (preset) =>
@@ -176,13 +200,16 @@ export const resolveWallpaperSize = (presetId) => {
   if (preset.id !== 'device') return preset;
 
   // Use portrait orientation even if the device is currently held sideways.
-  const ratio = window.devicePixelRatio || 1;
+  const dpr = window.devicePixelRatio || 1;
   const cssW = Math.min(window.screen.width, window.screen.height);
   const cssH = Math.max(window.screen.width, window.screen.height);
+  const width = Math.round(cssW * dpr);
+  // Tablets: lay out at a readable width, as with the iPad presets.
+  const pixelRatio = cssW > 600 ? width / TABLET_LAYOUT_WIDTH : dpr;
   return {
     ...preset,
-    width: Math.round(cssW * ratio),
-    height: Math.round(cssH * ratio),
-    pixelRatio: ratio,
+    width,
+    height: Math.round(cssH * dpr),
+    pixelRatio,
   };
 };

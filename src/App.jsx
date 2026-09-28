@@ -51,13 +51,11 @@ export default function App() {
   const [darkTheme, setDarkTheme] = usePersistentState('iium.darkTheme', DEFAULT_THEME.dark);
   const [timeFormat, setTimeFormat] = usePersistentState('iium.timeFormat', '12h');
   const [layout, setLayout] = usePersistentState('iium.layout', 'wallpaper');
-  // On a phone, sizing the wallpaper to the phone itself is the best default; a laptop's
-  // screen would give a landscape-derived size, so fall back to the common Android size.
+  // On a phone or tablet, sizing the wallpaper to the device itself is the best default;
+  // a laptop's screen would give a landscape-derived size, so fall back to a common phone size.
   const [wallpaperPreset, setWallpaperPreset] = usePersistentState(
     'iium.wallpaperPreset',
-    window.matchMedia?.('(pointer: coarse)').matches && Math.min(window.screen.width, window.screen.height) < 600
-      ? 'device'
-      : 'android'
+    window.matchMedia?.('(pointer: coarse)').matches ? 'device' : 'android'
   );
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
