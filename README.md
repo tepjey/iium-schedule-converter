@@ -16,7 +16,9 @@ Then pick a layout (timetable or phone wallpaper), a light or dark theme, 12h or
 
 The PDF is read entirely in your browser with pdf.js. Nothing from your slip is uploaded to a server. Display preferences (theme, layout, time format) are stored in your browser's local storage.
 
-Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com), which uses no cookies and doesn't track you across sites. It also counts a few actions (slip read, slip failed, image saved) by name only; no course or personal details are sent.
+Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com), which uses no cookies and doesn't track you across sites. It also counts a few actions (slip read, slip failed, image saved) by name only. When a slip can't be read, the type of problem (for example "no courses found") is counted too, without any slip content.
+
+If a slip can't be read, the site offers an optional anonymous error report. It shows you exactly what will be sent before you send it: the timetable rows it couldn't understand (course code, day, time, venue), with any long number masked. Your name, matric and IC number are never sent.
 
 ## How parsing works
 

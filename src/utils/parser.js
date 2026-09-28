@@ -65,11 +65,35 @@ export const parseConfirmationSlip = async (file) => {
   }
 
   const session = lines.join(' ').match(SESSION);
+  const { courses, unreadable } = processLines(lines);
   return {
-    courses: processLines(lines),
+    courses,
     semester: session ? `Semester ${session[2]}, ${session[1].replace(/\s/g, '')}` : '',
+    diagnostics: {
+      lineCount: lines.length,
+      // Timetable rows the parser couldn't make sense of. If no courses were found at
+      // all, fall back to any line that looks like a course, to show what the table
+      // looked like. Long numbers are masked so a matric or IC number can never leak.
+      unreadableRows: (courses.length ? unreadable : lines.filter((l) => COURSE_CODE_HINT.test(l)))
+        .slice(0, 5)
+        .map(maskRow),
+    },
   };
 };
+
+const COURSE_CODE_HINT = /\b[A-Z]{3,4}\s?\d{4}\b/;
+// A line that mentions a weekday and a clock time is meant to be a class slot.
+const DAY_HINT = /\b(?:MON|TUES?|WED|THU(?:RS?)?|FRI|SAT|SUN)\b|\b[MTWF]H?(?:-[MTWF]H?)+\b/;
+const TIME_HINT = /\d{1,2}[.:]\d{2}/;
+const looksLikeSlot = (text) => DAY_HINT.test(text) && TIME_HINT.test(text);
+
+// Matric numbers (7 digits) and IC numbers (12) are the only long numbers on a slip;
+// course codes, sections and times are all 4 digits or fewer.
+const maskRow = (line) =>
+  line
+    .replace(/\d{6}-\d{2}-\d{4}/g, '###') // IC written with dashes
+    .replace(/\d{5,}/g, '###')
+    .slice(0, 120);
 
 // page.getTextContent() uses `for await` over a ReadableStream, which iOS Safari does
 // not support (even in pdf.js's legacy build), so drain the stream with a reader instead.
@@ -117,6 +141,7 @@ const groupIntoLines = (items) => {
 
 export const processLines = (lines) => {
   const courses = [];
+  const unreadable = [];
   let current = null;
 
   for (const line of lines) {
@@ -146,6 +171,9 @@ export const processLines = (lines) => {
         current.title = rest.trim();
       }
 
+      // The row names a day and time but none could be read: a format we don't know yet.
+      if (current.isUnscheduled && looksLikeSlot(rest)) unreadable.push(line);
+
       courses.push(current);
       continue;
     }
@@ -159,10 +187,15 @@ export const processLines = (lines) => {
     }
 
     // Anything else (footer, "Total", notes) ends the current course's block.
-    if (/^Total\b/i.test(line) || /^Notes/i.test(line)) current = null;
+    if (/^Total\b/i.test(line) || /^Notes/i.test(line)) {
+      current = null;
+      continue;
+    }
+
+    if (current && looksLikeSlot(line)) unreadable.push(line);
   }
 
-  return courses;
+  return { courses, unreadable };
 };
 
 const addSlots = (course, daysStr, startStr, endStr, period, venue) => {

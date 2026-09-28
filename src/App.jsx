@@ -3,10 +3,11 @@ import { flushSync } from 'react-dom';
 import ControlPanel, { ExportButton } from './components/ControlPanel';
 import Khatam from './components/Khatam';
 import PDFUploader from './components/PDFUploader';
+import ReportPanel from './components/ReportPanel';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
 import { GITHUB_USERNAME } from './config';
-import { trackEvent } from './utils/analytics';
+import { failureReason, trackEvent } from './utils/analytics';
 import { exportToImage } from './utils/exporter';
 import { DEFAULT_THEME, THEMES, getTheme, resolveWallpaperSize } from './utils/theme';
 
@@ -42,6 +43,7 @@ function useViewportWidth() {
 export default function App() {
   const [courses, setCourses] = useState([]);
   const [semester, setSemester] = useState('');
+  const [partialReport, setPartialReport] = useState(null);
   const [fontFamily, setFontFamily] = usePersistentState('iium.font', 'font-sans');
   const [themeMode, setThemeMode] = usePersistentState('iium.theme', 'light');
   // Remember the last theme picked in each mode, so toggling Light/Dark restores it.
@@ -76,10 +78,21 @@ export default function App() {
   const wallpaperHeight = wallpaperSize.height / wallpaperSize.pixelRatio;
   const previewScale = Math.min(1, (viewportWidth - 56) / wallpaperWidth);
 
-  const handleDataParsed = ({ courses: parsedCourses, semester: parsedSemester }) => {
-    setCourses(parsedCourses);
-    setSemester(parsedSemester);
+  const handleDataParsed = (parsed) => {
+    setCourses(parsed.courses);
+    setSemester(parsed.semester);
     setActiveCourseId(null);
+
+    // The slip was read, but some class rows weren't understood, so classes may be
+    // missing. Count the reason (no slip content) and offer the opt-in report.
+    const rows = parsed.diagnostics.unreadableRows;
+    if (rows.length) {
+      const reason = failureReason({ parsed });
+      trackEvent(`slip-partial: ${reason}`, 'Slip partly read');
+      setPartialReport({ reason, rows });
+    } else {
+      setPartialReport(null);
+    }
   };
 
   const handleColorChange = (newColor) => {
@@ -127,6 +140,7 @@ export default function App() {
     setCourses([]);
     setSemester('');
     setActiveCourseId(null);
+    setPartialReport(null);
   };
 
   const hasData = courses.length > 0;
@@ -164,6 +178,18 @@ export default function App() {
                 {courses.length} courses, {totalCredits} credit hours. Select a course to change its color.
               </p>
             </div>
+
+            {partialReport && (
+              <div role="status" className="mb-6 rounded-2xl border border-brass/40 bg-brass/5 p-4 sm:p-5">
+                <p className="text-[0.9375rem] font-semibold text-ink">Some classes may be missing</p>
+                <p className="mt-1 text-sm text-muted">
+                  {partialReport.rows.length === 1 ? 'A row' : `${partialReport.rows.length} rows`} on your slip
+                  couldn’t be read, so {partialReport.rows.length === 1 ? 'that class isn’t' : 'those classes aren’t'} on
+                  the timetable yet.
+                </p>
+                <ReportPanel reason={partialReport.reason} rows={partialReport.rows} />
+              </div>
+            )}
 
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
               <section aria-label="Preview" className="min-w-0">
@@ -282,8 +308,8 @@ export default function App() {
             </p>
           )}
           <p>
-            An unofficial student project, not affiliated with IIUM. Your slip is processed on your device and never
-            uploaded.
+            An unofficial student project, not affiliated with IIUM. Your slip is processed on your device. Nothing from
+            it is sent unless you choose to send an error report.
           </p>
         </div>
       </footer>

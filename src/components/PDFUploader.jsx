@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { trackEvent } from '../utils/analytics';
+import { failureReason, trackEvent } from '../utils/analytics';
 import { parseConfirmationSlip } from '../utils/parser';
 import Khatam from './Khatam';
+import ReportPanel from './ReportPanel';
 
 const STEPS = [
   'Log in to i-Ma’luum. On the home page, find Favourite Links.',
@@ -14,11 +15,23 @@ export default function PDFUploader({ onDataParsed }) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // What the opt-in report would contain, shown under the error.
+  const [report, setReport] = useState(null);
+
+  // The reason (no slip content) is counted automatically so failures show up in the
+  // dashboard even when nobody reports them.
+  const fail = (message, reason, rows = []) => {
+    trackEvent(`slip-failed: ${reason}`, 'Slip could not be read');
+    setErrorMsg(message);
+    setReport({ reason, rows });
+  };
 
   const handleFile = async (file) => {
     if (!file) return;
+    setReport(null);
     const looksLikePdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
     if (!looksLikePdf) {
+      trackEvent(`slip-failed: ${failureReason({ error: 'not-pdf' })}`, 'Slip could not be read');
       setErrorMsg('That file isn’t a PDF. Save your confirmation slip as a PDF and upload it again.');
       return;
     }
@@ -29,19 +42,21 @@ export default function PDFUploader({ onDataParsed }) {
     try {
       const parsed = await parseConfirmationSlip(file);
       if (!parsed.courses.length) {
-        trackEvent('slip-failed', 'Slip could not be read');
-        setErrorMsg(
-          'No courses were found in this PDF. Check that it’s the Course Registration Confirmation Slip from i-Ma’luum.'
-        );
+        const reason = failureReason({ parsed });
+        const message =
+          parsed.diagnostics.lineCount === 0
+            ? 'This PDF has no readable text, so it may be a photo or a scan. In i-Ma’luum, use Print and save as PDF instead.'
+            : 'No courses were found in this PDF. Check that it’s the Course Registration Confirmation Slip from i-Ma’luum.';
+        fail(message, reason, parsed.diagnostics.unreadableRows);
         return;
       }
       trackEvent('slip-read', 'Slip read successfully');
       onDataParsed(parsed);
     } catch (err) {
       console.error('PDF parsing error:', err);
-      trackEvent('slip-failed', 'Slip could not be read');
-      setErrorMsg(
-        `This PDF couldn’t be read (${err?.message || 'unknown error'}). Try saving the slip from i-Ma’luum again.`
+      fail(
+        `This PDF couldn’t be read (${err?.message || 'unknown error'}). Try saving the slip from i-Ma’luum again.`,
+        failureReason({ error: err || {} })
       );
     } finally {
       setLoading(false);
@@ -91,7 +106,7 @@ export default function PDFUploader({ onDataParsed }) {
         </ol>
 
         <p className="mt-8 text-sm text-muted">
-          Your slip is read in this browser. It never leaves your device.
+          Your slip is read right here in your browser, on your device.
         </p>
       </div>
 
@@ -146,6 +161,7 @@ export default function PDFUploader({ onDataParsed }) {
             {errorMsg}
           </p>
         )}
+        {report && <ReportPanel key={`${report.reason}|${report.rows.join('|')}`} {...report} />}
       </div>
     </section>
   );
