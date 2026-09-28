@@ -6,6 +6,7 @@ import PDFUploader from './components/PDFUploader';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
 import { GITHUB_USERNAME } from './config';
+import { trackEvent } from './utils/analytics';
 import { exportToImage } from './utils/exporter';
 import { DEFAULT_THEME, THEMES, getTheme, resolveWallpaperSize } from './utils/theme';
 
@@ -92,12 +93,14 @@ export default function App() {
           filename: `IIUM_Wallpaper_${wallpaperSize.width}x${wallpaperSize.height}.png`,
           pixelRatio: wallpaperSize.pixelRatio,
         });
+        trackEvent('saved-wallpaper', 'Saved wallpaper');
       } else {
         await exportToImage(timetableRef, {
           filename: 'IIUM_Timetable.png',
           pixelRatio: 3,
           backgroundColor: colors.background,
         });
+        trackEvent('saved-timetable', 'Saved timetable');
       }
     } catch (err) {
       console.error('Export failed:', err);

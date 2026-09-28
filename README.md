@@ -14,7 +14,9 @@ Then pick a layout (timetable or phone wallpaper), a light or dark theme, 12h or
 
 ## Privacy
 
-The PDF is read entirely in your browser with pdf.js. Nothing is uploaded to a server, and there is no tracking. Display preferences (theme, layout, time format) are stored in your browser's local storage.
+The PDF is read entirely in your browser with pdf.js. Nothing from your slip is uploaded to a server. Display preferences (theme, layout, time format) are stored in your browser's local storage.
+
+Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com), which uses no cookies and doesn't track you across sites. It also counts a few actions (slip read, slip failed, image saved) by name only; no course or personal details are sent.
 
 ## How parsing works
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { trackEvent } from '../utils/analytics';
 import { parseConfirmationSlip } from '../utils/parser';
 import Khatam from './Khatam';
 
@@ -28,14 +29,17 @@ export default function PDFUploader({ onDataParsed }) {
     try {
       const parsed = await parseConfirmationSlip(file);
       if (!parsed.courses.length) {
+        trackEvent('slip-failed', 'Slip could not be read');
         setErrorMsg(
           'No courses were found in this PDF. Check that it’s the Course Registration Confirmation Slip from i-Ma’luum.'
         );
         return;
       }
+      trackEvent('slip-read', 'Slip read successfully');
       onDataParsed(parsed);
     } catch (err) {
       console.error('PDF parsing error:', err);
+      trackEvent('slip-failed', 'Slip could not be read');
       setErrorMsg(
         `This PDF couldn’t be read (${err?.message || 'unknown error'}). Try saving the slip from i-Ma’luum again.`
       );
