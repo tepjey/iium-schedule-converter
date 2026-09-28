@@ -1,5 +1,5 @@
 import { ChevronDown, Download, Loader2 } from 'lucide-react';
-import { COURSE_PALETTE, WALLPAPER_PRESETS, themesForMode } from '../utils/theme';
+import { COURSE_PALETTE, WALLPAPER_GROUPS, WALLPAPER_PRESETS, presetLabel, themesForMode } from '../utils/theme';
 
 const FONT_OPTIONS = [
   { id: 'font-sans', name: 'Jakarta Sans' },
@@ -134,17 +134,21 @@ export default function ControlPanel({
           value={layout}
           onChange={setLayout}
           options={[
-            { id: 'standard', label: 'Timetable' },
             { id: 'wallpaper', label: 'Wallpaper' },
+            { id: 'standard', label: 'Timetable' },
           ]}
         />
         {layout === 'wallpaper' && (
-          <Field label="Phone size">
-            <Select value={wallpaperPreset} onChange={setWallpaperPreset} label="Phone size">
-              {WALLPAPER_PRESETS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
+          <Field label="Phone model">
+            <Select value={wallpaperPreset} onChange={setWallpaperPreset} label="Phone model">
+              {WALLPAPER_GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {WALLPAPER_PRESETS.filter((p) => p.group === group).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {presetLabel(p)}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </Select>
           </Field>

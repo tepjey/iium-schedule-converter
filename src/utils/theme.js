@@ -138,15 +138,41 @@ export const blockColors = (courseColor, theme) => {
 
 // Output pixel sizes for the wallpaper export. The on-screen layout is rendered at
 // width / pixelRatio CSS pixels and scaled up on export, like a real phone screen.
+// iPhone ratios match the device (2x or 3x). Android phones vary, so they use 3x (2x for
+// HD+) to keep the layout a typical phone width. Ids 'android', 'iphone' and
+// 'iphone-max' are kept stable because they may be saved in visitors' browsers.
 export const WALLPAPER_PRESETS = [
-  { id: 'android', name: 'Android (1080 × 2400)', width: 1080, height: 2400, pixelRatio: 3 },
-  { id: 'iphone', name: 'iPhone 15/16 (1179 × 2556)', width: 1179, height: 2556, pixelRatio: 3 },
-  { id: 'iphone-max', name: 'iPhone Pro Max (1290 × 2796)', width: 1290, height: 2796, pixelRatio: 3 },
-  { id: 'device', name: 'Match this device', width: 0, height: 0, pixelRatio: 0 },
+  { id: 'device', group: 'Auto', name: 'Match this device', width: 0, height: 0, pixelRatio: 0 },
+
+  { id: 'iphone-16-pro-max', group: 'iPhone', name: 'iPhone 16 Pro Max, 17 Pro Max', width: 1320, height: 2868, pixelRatio: 3 },
+  { id: 'iphone-16-pro', group: 'iPhone', name: 'iPhone 16 Pro, 17, 17 Pro', width: 1206, height: 2622, pixelRatio: 3 },
+  { id: 'iphone-air', group: 'iPhone', name: 'iPhone Air', width: 1260, height: 2736, pixelRatio: 3 },
+  { id: 'iphone-max', group: 'iPhone', name: 'iPhone 14 Pro Max, 15 Plus, 15 Pro Max, 16 Plus', width: 1290, height: 2796, pixelRatio: 3 },
+  { id: 'iphone', group: 'iPhone', name: 'iPhone 14 Pro, 15, 15 Pro, 16', width: 1179, height: 2556, pixelRatio: 3 },
+  { id: 'iphone-plus', group: 'iPhone', name: 'iPhone 12 Pro Max, 13 Pro Max, 14 Plus', width: 1284, height: 2778, pixelRatio: 3 },
+  { id: 'iphone-12', group: 'iPhone', name: 'iPhone 12, 12 Pro, 13, 13 Pro, 14', width: 1170, height: 2532, pixelRatio: 3 },
+  { id: 'iphone-mini', group: 'iPhone', name: 'iPhone 12 mini, 13 mini', width: 1080, height: 2340, pixelRatio: 3 },
+  { id: 'iphone-xs-max', group: 'iPhone', name: 'iPhone XS Max, 11 Pro Max', width: 1242, height: 2688, pixelRatio: 3 },
+  { id: 'iphone-x', group: 'iPhone', name: 'iPhone X, XS, 11 Pro', width: 1125, height: 2436, pixelRatio: 3 },
+  { id: 'iphone-11', group: 'iPhone', name: 'iPhone XR, 11', width: 828, height: 1792, pixelRatio: 2 },
+  { id: 'iphone-se', group: 'iPhone', name: 'iPhone SE (2nd, 3rd gen), 8', width: 750, height: 1334, pixelRatio: 2 },
+
+  { id: 'android', group: 'Android', name: 'Most Android phones (1080 × 2400)', width: 1080, height: 2400, pixelRatio: 3 },
+  { id: 'android-2340', group: 'Android', name: 'Samsung Galaxy S22–S25 (1080 × 2340)', width: 1080, height: 2340, pixelRatio: 3 },
+  { id: 'android-ultra', group: 'Android', name: 'Samsung Galaxy S24/S25 Ultra (1440 × 3120)', width: 1440, height: 3120, pixelRatio: 3 },
+  { id: 'android-1220', group: 'Android', name: 'Redmi Note 13 Pro, Xiaomi 13T/14T (1220 × 2712)', width: 1220, height: 2712, pixelRatio: 3 },
+  { id: 'android-hd', group: 'Android', name: 'Budget HD+ phones (720 × 1600)', width: 720, height: 1600, pixelRatio: 2 },
 ];
 
+export const WALLPAPER_GROUPS = ['Auto', 'iPhone', 'Android'];
+
+// Pixel size shown next to a preset in the picker, e.g. "1179 × 2556".
+export const presetLabel = (preset) =>
+  preset.width && !preset.name.includes('×') ? `${preset.name} (${preset.width} × ${preset.height})` : preset.name;
+
 export const resolveWallpaperSize = (presetId) => {
-  const preset = WALLPAPER_PRESETS.find((p) => p.id === presetId) || WALLPAPER_PRESETS[0];
+  const preset =
+    WALLPAPER_PRESETS.find((p) => p.id === presetId) || WALLPAPER_PRESETS.find((p) => p.id === 'android');
   if (preset.id !== 'device') return preset;
 
   // Use portrait orientation even if the device is currently held sideways.
