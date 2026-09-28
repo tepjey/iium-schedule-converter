@@ -45,7 +45,9 @@ const TIME = '(\\d{1,2}(?:[.:]\\d{2})?)\\s*-\\s*(\\d{1,2}(?:[.:]\\d{2})?)\\s*(AM
 // "BICS 2301 3 R Enterprise Networks 3 T-TH 11.30 - 12.50 PM ICT CISCO LAB LEVEL 4C"
 const COURSE_ROW = /^([A-Z]{3,4})\s*(\d{4}[A-Z]?)\s+(\d{1,3})\s+([A-Z]{1,2})\s+(.*)$/;
 // Remainder after status: "<title> <chr> [<days> <time> <period> <venue>]"
-const COURSE_REST = new RegExp(`^(.*?)\\s+(\\d{1,2})(?:\\s+(${DAYS})\\s+${TIME}\\s*(.*))?$`);
+// Credit hours can be fractional, printed as ".5" or "0.5" (e.g. CCFM 2061, LQAD 2003).
+const CREDITS = '(\\d{1,2}(?:\\.\\d+)?|\\.\\d+)';
+const COURSE_REST = new RegExp(`^(.*?)\\s+${CREDITS}(?:\\s+(${DAYS})\\s+${TIME}\\s*(.*))?$`);
 // Continuation line for a course with extra slots: "MON 2.00 - 3.30 PM [venue]"
 const EXTRA_SLOT = new RegExp(`^(${DAYS})\\s+${TIME}\\s*(.*)$`);
 
