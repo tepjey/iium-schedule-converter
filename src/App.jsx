@@ -30,14 +30,18 @@ function usePersistentState(key, initialValue) {
   return [value, setValue];
 }
 
-function useViewportWidth() {
-  const [width, setWidth] = useState(() => window.innerWidth);
+// Width of an element, kept up to date as the layout changes. Returns a callback ref so
+// measuring starts whenever the element appears (the preview only exists after upload).
+function useElementWidth() {
+  const [node, setNode] = useState(null);
+  const [width, setWidth] = useState(0);
   useEffect(() => {
-    const onResize = () => setWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  return width;
+    if (!node) return undefined;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node]);
+  return [setNode, width];
 }
 
 export default function App() {
@@ -57,24 +61,26 @@ export default function App() {
     'iium.wallpaperPreset',
     window.matchMedia?.('(pointer: coarse)').matches ? 'device' : 'android'
   );
+  const [orientation, setOrientation] = usePersistentState('iium.orientation', 'portrait');
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const timetableRef = useRef(null);
   const wallpaperRef = useRef(null);
-  const viewportWidth = useViewportWidth();
+  const [previewAreaRef, previewAreaWidth] = useElementWidth();
 
   const mode = themeMode === 'dark' ? 'dark' : 'light';
   const pickedTheme = mode === 'dark' ? darkTheme : lightTheme;
   const theme = THEMES[pickedTheme]?.mode === mode ? pickedTheme : DEFAULT_THEME[mode];
   const setTheme = mode === 'dark' ? setDarkTheme : setLightTheme;
   const colors = getTheme(theme);
-  const wallpaperSize = resolveWallpaperSize(wallpaperPreset);
+  const wallpaperSize = resolveWallpaperSize(wallpaperPreset, orientation);
 
-  // Shrink the phone preview to fit narrow screens; the export itself is unaffected.
+  // Shrink the device preview to fit its column (landscape iPads are wide); the
+  // export itself is unaffected. 46px covers the card's padding and border plus the frame.
   const wallpaperWidth = wallpaperSize.width / wallpaperSize.pixelRatio;
   const wallpaperHeight = wallpaperSize.height / wallpaperSize.pixelRatio;
-  const previewScale = Math.min(1, (viewportWidth - 56) / wallpaperWidth);
+  const previewScale = previewAreaWidth ? Math.min(1, (previewAreaWidth - 46) / wallpaperWidth) : 1;
 
   const handleDataParsed = (parsed) => {
     setCourses(parsed.courses);
@@ -190,7 +196,7 @@ export default function App() {
             )}
 
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
-              <section aria-label="Preview" className="min-w-0">
+              <section ref={previewAreaRef} aria-label="Preview" className="min-w-0">
                 {layout === 'wallpaper' ? (
                   <div className="flex flex-col items-center gap-4 rounded-2xl border border-line bg-surface px-4 py-8">
                     <div
@@ -272,6 +278,9 @@ export default function App() {
                   setLayout={setLayout}
                   wallpaperPreset={wallpaperPreset}
                   setWallpaperPreset={setWallpaperPreset}
+                  showOrientation={wallpaperSize.tablet}
+                  orientation={wallpaperSize.landscape ? 'landscape' : 'portrait'}
+                  setOrientation={setOrientation}
                 />
               </aside>
             </div>

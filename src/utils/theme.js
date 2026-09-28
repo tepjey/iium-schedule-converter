@@ -194,22 +194,27 @@ export const WALLPAPER_GROUPS = ['Auto', 'iPhone', 'iPad', 'Android'];
 export const presetLabel = (preset) =>
   preset.width && !preset.name.includes('×') ? `${preset.name} (${preset.width} × ${preset.height})` : preset.name;
 
-export const resolveWallpaperSize = (presetId) => {
+// Resolve a preset to its output size. Tablets (`tablet: true`) can also be landscape,
+// which swaps the dimensions but keeps the same pixel ratio, so text stays the same size.
+export const resolveWallpaperSize = (presetId, orientation = 'portrait') => {
   const preset =
     WALLPAPER_PRESETS.find((p) => p.id === presetId) || WALLPAPER_PRESETS.find((p) => p.id === 'android');
-  if (preset.id !== 'device') return preset;
+  let size;
+  if (preset.id === 'device') {
+    // Start from portrait even if the device is currently held sideways.
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.min(window.screen.width, window.screen.height);
+    const cssH = Math.max(window.screen.width, window.screen.height);
+    const width = Math.round(cssW * dpr);
+    const tablet = cssW > 600;
+    // Tablets: lay out at a readable width, as with the iPad presets.
+    size = { ...preset, width, height: Math.round(cssH * dpr), pixelRatio: tablet ? width / TABLET_LAYOUT_WIDTH : dpr, tablet };
+  } else {
+    size = { ...preset, tablet: preset.group === 'iPad' };
+  }
 
-  // Use portrait orientation even if the device is currently held sideways.
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = Math.min(window.screen.width, window.screen.height);
-  const cssH = Math.max(window.screen.width, window.screen.height);
-  const width = Math.round(cssW * dpr);
-  // Tablets: lay out at a readable width, as with the iPad presets.
-  const pixelRatio = cssW > 600 ? width / TABLET_LAYOUT_WIDTH : dpr;
-  return {
-    ...preset,
-    width,
-    height: Math.round(cssH * dpr),
-    pixelRatio,
-  };
+  if (size.tablet && orientation === 'landscape') {
+    return { ...size, width: size.height, height: size.width, landscape: true };
+  }
+  return size;
 };

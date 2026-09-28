@@ -125,6 +125,9 @@ export default function ControlPanel({
   setLayout,
   wallpaperPreset,
   setWallpaperPreset,
+  showOrientation,
+  orientation,
+  setOrientation,
 }) {
   return (
     <div className="rounded-2xl border border-line bg-surface px-5">
@@ -151,6 +154,19 @@ export default function ControlPanel({
                 </optgroup>
               ))}
             </Select>
+          </Field>
+        )}
+        {layout === 'wallpaper' && showOrientation && (
+          <Field label="Orientation">
+            <Segmented
+              label="Orientation"
+              value={orientation}
+              onChange={setOrientation}
+              options={[
+                { id: 'portrait', label: 'Portrait' },
+                { id: 'landscape', label: 'Landscape' },
+              ]}
+            />
           </Field>
         )}
       </Section>
