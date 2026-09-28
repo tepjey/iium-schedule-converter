@@ -39,7 +39,8 @@ const DAY_ALIASES = {
 
 const DAY_TOKEN = '(?:THURS|THUR|THU|TUES|TUE|MON|WED|FRI|SAT|SUN|TH|M|T|W|F)';
 const DAYS = `${DAY_TOKEN}(?:-${DAY_TOKEN})*`;
-const TIME = '(\\d{1,2}[.:]\\d{2})\\s*-\\s*(\\d{1,2}[.:]\\d{2})\\s*(AM|PM)?';
+// Minutes are optional: slips print whole hours as "2.00 - 5" or "9.00 - 12".
+const TIME = '(\\d{1,2}(?:[.:]\\d{2})?)\\s*-\\s*(\\d{1,2}(?:[.:]\\d{2})?)\\s*(AM|PM)?';
 
 // "BICS 2301 3 R Enterprise Networks 3 T-TH 11.30 - 12.50 PM ICT CISCO LAB LEVEL 4C"
 const COURSE_ROW = /^([A-Z]{3,4})\s*(\d{4}[A-Z]?)\s+(\d{1,3})\s+([A-Z]{1,2})\s+(.*)$/;
@@ -184,26 +185,38 @@ const addSlots = (course, daysStr, startStr, endStr, period, venue) => {
   if (days.length) course.isUnscheduled = false;
 };
 
-// The slip prints a single AM/PM after the range, which applies to the end time
-// ("11.30 - 12.50 PM" is 11:30 AM to 12:50 PM), so derive the start from the end.
+// The slip prints a single AM/PM for the whole range, but inconsistently: it can belong
+// to the end ("11.30 - 12.50 PM" is 11:30 AM-12:50 PM) or to the start ("9.00 - 1 AM"
+// is 9 AM-1 PM). So try both 12-hour readings of each end and keep the most plausible:
+// ends after it starts, within class hours, and agreeing with the printed period.
+const EARLIEST = 7 * 60;
+const LATEST = 23 * 60;
+const LONGEST = 8 * 60;
+
 export const toMinutesRange = (startStr, endStr, period) => {
-  const parse = (s) => s.split(/[.:]/).map(Number);
-  const [sh, sm] = parse(startStr);
-  const [eh, em] = parse(endStr);
-
-  const to24 = (h, p) => {
-    if (p === 'PM') return h === 12 ? 12 : h + 12;
-    if (p === 'AM') return h === 12 ? 0 : h;
-    // No period printed: classes run 8am-10pm, so small hours are afternoon.
-    return h < 8 ? h + 12 : h;
+  const parse = (s) => {
+    const [h, m = 0] = s.split(/[.:]/).map(Number);
+    return (h % 12) * 60 + m;
   };
+  const startBase = parse(startStr);
+  const endBase = parse(endStr);
+  const isPm = (minutes) => minutes >= 12 * 60;
 
-  const end = to24(eh, period) * 60 + em;
-  let start = to24(sh, period) * 60 + sm;
-  if (start >= end) start -= 12 * 60;
-  if (start < 0 || start >= end) start = sh * 60 + sm;
+  let best = null;
+  for (const start of [startBase, startBase + 12 * 60]) {
+    for (const end of [endBase, endBase + 12 * 60]) {
+      if (start < EARLIEST || end > LATEST || end <= start || end - start > LONGEST) continue;
+      // Matching the period on the end time is the more common layout, so weigh it higher.
+      const score = period ? (isPm(end) === (period === 'PM') ? 2 : 0) + (isPm(start) === (period === 'PM') ? 1 : 0) : 0;
+      // Ties (e.g. no period printed) go to the earlier, more typical daytime slot.
+      if (!best || score > best.score || (score === best.score && start < best.start)) {
+        best = { start, end, score };
+      }
+    }
+  }
 
-  return { start, end };
+  // Nothing plausible: fall back to the literal numbers so the class still shows up.
+  return best ? { start: best.start, end: best.end } : { start: startBase, end: Math.max(endBase, startBase + 60) };
 };
 
 export const formatTime = (minutes, format = '12h') => {
