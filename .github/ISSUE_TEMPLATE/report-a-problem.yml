@@ -1,0 +1,78 @@
+name: Report a problem
+description: Your timetable came out wrong, the upload failed, or saving the image didn't work.
+title: "[Problem] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! A few details help get this fixed quickly.
+
+        ⚠️ **Please don't attach your confirmation slip.** It shows your IC and matric number, and issues here are public. Typing out the affected row and adding a screenshot of the timetable is enough.
+
+  - type: dropdown
+    id: problem
+    attributes:
+      label: What went wrong?
+      options:
+        - The upload failed or showed an error
+        - A class is missing
+        - A class is on the wrong day or at the wrong time
+        - Course details are wrong (title, section, venue)
+        - Saving the image or wallpaper didn't work
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: courses
+    attributes:
+      label: Which course(s)?
+      description: The course code as shown on your slip. Leave empty if it affects everything.
+      placeholder: e.g. BICS 2301
+
+  - type: textarea
+    id: slip-row
+    attributes:
+      label: What your slip says
+      description: Type the Day, Time and Venue exactly as printed on your slip for the affected course. This is the most useful part.
+      placeholder: |
+        e.g. MON 9.00 - 1 AM KAED STUDIO(L3) 9
+             FRI 8.30 - 12.30 AM KAED STUDIO(L3) 9
+
+  - type: textarea
+    id: result
+    attributes:
+      label: What the website showed
+      description: If you saw an error message, copy it here.
+      placeholder: e.g. The class shows on Monday 9 PM instead of 9 AM.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag in a screenshot of the timetable or error. Crop out anything personal.
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device and browser
+      options:
+        - iPhone or iPad (Safari)
+        - iPhone or iPad (another browser)
+        - Android (Chrome)
+        - Android (another browser)
+        - Laptop or desktop
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I haven't attached my confirmation slip or anything showing my IC or matric number.
+          required: true
