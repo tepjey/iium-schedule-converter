@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { failureReason, trackEvent } from '../utils/analytics';
+import { recordError } from '../utils/diagnostics';
 import { parseConfirmationSlip } from '../utils/parser';
 import Khatam from './Khatam';
 import ReportLink from './ReportLink';
@@ -65,6 +66,7 @@ export default function PDFUploader({ onDataParsed }) {
       onDataParsed(parsed);
     } catch (err) {
       console.error('PDF parsing error:', err);
+      recordError(err);
       fail(
         `This PDF couldn’t be read (${err?.message || 'unknown error'}). Try saving the slip from i-Ma’luum again.`,
         failureReason({ error: err || {} })

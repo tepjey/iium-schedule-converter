@@ -69,6 +69,13 @@ body:
     validations:
       required: true
 
+  - type: textarea
+    id: technical
+    attributes:
+      label: Technical details
+      description: Filled in by the website when you use its report link. It shows your browser version and where the error happened, nothing from your slip. Leave it as it is.
+      render: text
+
   - type: checkboxes
     id: privacy
     attributes:

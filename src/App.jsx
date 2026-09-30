@@ -12,6 +12,7 @@ import WhatsNew from './components/WhatsNew';
 import { GITHUB_USERNAME } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
+import { recordError } from './utils/diagnostics';
 import { downloadImage, isInAppBrowser, isTouchDevice, renderImage, shareImage } from './utils/exporter';
 import {
   DEFAULT_THEME,
@@ -157,6 +158,7 @@ export default function App() {
             });
     } catch (err) {
       console.error('Export failed:', err);
+      recordError(err);
       trackEvent(`save-failed: ${String(err?.message || 'unknown').slice(0, 60)}`, 'Image could not be created');
       setExportError(`The image couldn’t be created (${err?.message || 'unknown error'}). Try again, or use a different browser.`);
       return;
