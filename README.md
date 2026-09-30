@@ -1,6 +1,8 @@
-# IIUM Timetable
+# IIUM Schedule Converter (IIUM Timetable)
 
-Turn your IIUM Course Registration Confirmation Slip into a weekly timetable you can recolor and save as an image or a phone wallpaper.
+**Use it here: [tepjey.github.io/iium-schedule-converter](https://tepjey.github.io/iium-schedule-converter/)**
+
+Turn your IIUM Course Registration Confirmation Slip from i-Ma'luum into a weekly class schedule you can recolor and save as a timetable image or a phone wallpaper.
 
 An unofficial student project, not affiliated with IIUM.
 

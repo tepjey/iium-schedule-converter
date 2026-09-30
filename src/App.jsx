@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import ControlPanel, { ExportButton } from './components/ControlPanel';
+import Faq from './components/Faq';
 import Khatam from './components/Khatam';
 import PDFUploader from './components/PDFUploader';
 import ReportLink from './components/ReportLink';
@@ -194,7 +195,10 @@ export default function App() {
 
       <main className="mx-auto max-w-6xl px-5 pb-12 sm:px-8 lg:pb-16">
         {!hasData ? (
-          <PDFUploader onDataParsed={handleDataParsed} />
+          <>
+            <PDFUploader onDataParsed={handleDataParsed} />
+            <Faq />
+          </>
         ) : (
           <>
             <div className="pt-8 pb-6 lg:pt-10">

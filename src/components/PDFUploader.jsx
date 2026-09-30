@@ -84,8 +84,9 @@ export default function PDFUploader({ onDataParsed }) {
     // Desktop: intro and steps on the left, upload box spanning both rows on the right.
     <section className="grid gap-8 py-6 lg:grid-cols-[1.05fr_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-8 lg:py-14">
       <div className="order-1 max-w-xl lg:order-none lg:self-end">
+        <p className="mb-3 text-sm font-semibold tracking-wide text-teal uppercase">IIUM schedule converter</p>
         <h1 className="font-kufi text-[2.25rem] leading-[1.08] font-semibold text-ink sm:text-[3.25rem]">
-          Your confirmation slip, as a weekly timetable.
+          Your IIUM confirmation slip, as a weekly timetable.
         </h1>
         <p className="mt-4 max-w-[34rem] text-base leading-relaxed text-muted sm:mt-5 sm:text-[1.0625rem]">
           Upload the PDF from i-Ma’luum to see your classes laid out by day. Recolor each course, then save it as an

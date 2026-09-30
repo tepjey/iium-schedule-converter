@@ -1,4 +1,4 @@
-# IIUM Timetable
+# IIUM Schedule Converter (IIUM Timetable)
 
 > A free web tool that turns an IIUM (International Islamic University Malaysia) course registration confirmation slip into a weekly timetable and a phone or tablet wallpaper.
 
