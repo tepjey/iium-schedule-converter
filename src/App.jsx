@@ -8,10 +8,19 @@ import ReportLink from './components/ReportLink';
 import SavePreview from './components/SavePreview';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
+import WhatsNew from './components/WhatsNew';
 import { GITHUB_USERNAME } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
+import { shouldAnnounce } from './utils/announcement';
 import { downloadImage, isInAppBrowser, isTouchDevice, renderImage, shareImage } from './utils/exporter';
-import { DEFAULT_THEME, THEMES, getTheme, resolveWallpaperSize } from './utils/theme';
+import {
+  DEFAULT_THEME,
+  LOCK_WIDGETS,
+  THEMES,
+  getTheme,
+  lockScreenPlatform,
+  resolveWallpaperSize,
+} from './utils/theme';
 
 // Display preferences are remembered in this browser between visits.
 function usePersistentState(key, initialValue) {
@@ -64,11 +73,18 @@ export default function App() {
     window.matchMedia?.('(pointer: coarse)').matches ? 'device' : 'android'
   );
   const [orientation, setOrientation] = usePersistentState('iium.orientation', 'portrait');
+  // 'all' shows Mon-Fri; 'class' leaves out weekdays with no class, such as a free Friday.
+  const [days, setDays] = usePersistentState('iium.days', 'all');
+  // Where the iPhone/iPad lock screen widgets sit, so the wallpaper keeps that area clear.
+  const [lockWidgets, setLockWidgets] = usePersistentState('iium.lockWidgets', 'top');
+  // What each class block is titled with: 'code', 'short' (e.g. DSA) or 'both'.
+  const [courseLabel, setCourseLabel] = usePersistentState('iium.courseLabel', 'code');
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   // The rendered image and its object URL, when it's shown in the save preview.
   const [savePreview, setSavePreview] = useState(null);
+  const [showWhatsNew, setShowWhatsNew] = useState(shouldAnnounce);
   const timetableRef = useRef(null);
   const wallpaperRef = useRef(null);
   const [previewAreaRef, previewAreaWidth] = useElementWidth();
@@ -79,6 +95,10 @@ export default function App() {
   const setTheme = mode === 'dark' ? setDarkTheme : setLightTheme;
   const colors = getTheme(theme);
   const wallpaperSize = resolveWallpaperSize(wallpaperPreset, orientation);
+  const platform = lockScreenPlatform(wallpaperSize);
+  const widgetPlacement = LOCK_WIDGETS.includes(lockWidgets) ? lockWidgets : 'top';
+  const classDaysOnly = days === 'class';
+  const label = ['code', 'short', 'both'].includes(courseLabel) ? courseLabel : 'code';
 
   // Shrink the device preview to fit its column (landscape iPads are wide); the
   // export itself is unaffected. 46px covers the card's padding and border plus the frame.
@@ -106,6 +126,11 @@ export default function App() {
   const handleColorChange = (newColor) => {
     if (!activeCourseId) return;
     setCourses((prev) => prev.map((c) => (c.id === activeCourseId ? { ...c, color: newColor } : c)));
+  };
+
+  const handleShortNameChange = (shortName) => {
+    if (!activeCourseId) return;
+    setCourses((prev) => prev.map((c) => (c.id === activeCourseId ? { ...c, shortName } : c)));
   };
 
   const handleExport = async () => {
@@ -179,17 +204,27 @@ export default function App() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
           <div className="flex items-center gap-2.5">
             <Khatam size={22} strokeWidth={7} color="var(--color-teal)" />
-            <span className="font-kufi text-xl font-medium tracking-tight text-ink">IIUM Timetable</span>
+            <span className="font-kufi text-xl font-medium tracking-tight whitespace-nowrap text-ink">IIUM Timetable</span>
           </div>
-          {hasData && (
+          <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={resetData}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-teal transition-colors hover:bg-teal-wash"
+              onClick={() => setShowWhatsNew(true)}
+              className="rounded-lg px-2.5 py-2 text-sm font-medium whitespace-nowrap text-muted transition-colors hover:bg-teal-wash hover:text-ink sm:px-3"
             >
-              Upload another slip
+              What’s new
             </button>
-          )}
+            {hasData && (
+              <button
+                type="button"
+                onClick={resetData}
+                className="rounded-lg px-2.5 py-2 text-sm font-medium whitespace-nowrap text-teal transition-colors hover:bg-teal-wash sm:px-3"
+              >
+                <span className="sm:hidden">New slip</span>
+                <span className="hidden sm:inline">Upload another slip</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -242,6 +277,9 @@ export default function App() {
                           size={wallpaperSize}
                           theme={theme}
                           timeFormat={timeFormat}
+                          classDaysOnly={classDaysOnly}
+                          lockWidgets={widgetPlacement}
+                          courseLabel={label}
                           activeCourseId={activeCourseId}
                           onSelectCourse={setActiveCourseId}
                           fontClass={fontFamily}
@@ -250,8 +288,10 @@ export default function App() {
                       </div>
                     </div>
                     <p className="max-w-xs text-center text-[0.8125rem] text-muted">
-                      Saves at {wallpaperSize.width} × {wallpaperSize.height} pixels. The top quarter stays clear for
-                      your lock screen clock.
+                      Saves at {wallpaperSize.width} × {wallpaperSize.height} pixels.{' '}
+                      {platform === 'android'
+                        ? 'The top quarter stays clear for your lock screen clock.'
+                        : 'The timetable stays clear of your lock screen clock, widgets and buttons.'}
                     </p>
                   </div>
                 ) : (
@@ -274,6 +314,8 @@ export default function App() {
                         onSelectCourse={setActiveCourseId}
                         theme={theme}
                         timeFormat={timeFormat}
+                        classDaysOnly={classDaysOnly}
+                        courseLabel={label}
                         showSelection={!isExporting}
                       />
                       {unscheduledCourses.length > 0 && (
@@ -293,6 +335,7 @@ export default function App() {
                   activeCourseId={activeCourseId}
                   onSelectCourse={setActiveCourseId}
                   onColorChange={handleColorChange}
+                  onShortNameChange={handleShortNameChange}
                   onExport={handleExport}
                   isExporting={isExporting}
                   exportError={exportError}
@@ -311,6 +354,13 @@ export default function App() {
                   showOrientation={wallpaperSize.tablet}
                   orientation={wallpaperSize.landscape ? 'landscape' : 'portrait'}
                   setOrientation={setOrientation}
+                  days={classDaysOnly ? 'class' : 'all'}
+                  setDays={setDays}
+                  showLockWidgets={platform !== 'android'}
+                  lockWidgets={widgetPlacement}
+                  setLockWidgets={setLockWidgets}
+                  courseLabel={label}
+                  setCourseLabel={setCourseLabel}
                 />
               </aside>
             </div>
@@ -353,6 +403,8 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {showWhatsNew && <WhatsNew onClose={() => setShowWhatsNew(false)} />}
 
       {savePreview && (
         <SavePreview

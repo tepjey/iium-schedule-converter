@@ -14,10 +14,12 @@ export default function Timetable({
   theme = 'classic',
   timeFormat = '12h',
   showSelection = true,
+  classDaysOnly = false,
+  courseLabel = 'code',
 }) {
   const colors = getTheme(theme);
   const allSchedules = courses.flatMap((c) => c.schedules || []);
-  const days = visibleDays(allSchedules);
+  const days = visibleDays(allSchedules, classDaysOnly);
 
   // Fit the grid to the classes, but never narrower than 8am-6pm.
   const firstHour = Math.min(8, ...allSchedules.map((s) => Math.floor(s.start / 60)));
@@ -146,7 +148,7 @@ export default function Timetable({
                   font: 'inherit',
                 }}
               >
-                <SubjectCard course={course} schedule={schedule} timeFormat={timeFormat} />
+                <SubjectCard course={course} schedule={schedule} timeFormat={timeFormat} courseLabel={courseLabel} />
               </button>
             );
           })

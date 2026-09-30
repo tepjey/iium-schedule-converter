@@ -111,6 +111,7 @@ export default function ControlPanel({
   activeCourseId,
   onSelectCourse,
   onColorChange,
+  onShortNameChange,
   onExport,
   isExporting,
   exportError,
@@ -129,6 +130,13 @@ export default function ControlPanel({
   showOrientation,
   orientation,
   setOrientation,
+  days,
+  setDays,
+  showLockWidgets,
+  lockWidgets,
+  setLockWidgets,
+  courseLabel,
+  setCourseLabel,
 }) {
   return (
     <div className="rounded-2xl border border-line bg-surface px-5">
@@ -170,6 +178,38 @@ export default function ControlPanel({
             />
           </Field>
         )}
+        {layout === 'wallpaper' && showLockWidgets && (
+          <Field label="Lock screen widgets">
+            <Segmented
+              label="Lock screen widgets"
+              value={orientation === 'landscape' && lockWidgets === 'bottom' ? 'top' : lockWidgets}
+              onChange={setLockWidgets}
+              options={
+                orientation === 'landscape'
+                  ? [
+                      { id: 'none', label: 'None' },
+                      { id: 'top', label: 'Sidebar' },
+                    ]
+                  : [
+                      { id: 'none', label: 'None' },
+                      { id: 'top', label: 'Top' },
+                      { id: 'bottom', label: 'Bottom' },
+                    ]
+              }
+            />
+          </Field>
+        )}
+        <Field label="Days">
+          <Segmented
+            label="Days"
+            value={days}
+            onChange={setDays}
+            options={[
+              { id: 'all', label: 'Mon–Fri' },
+              { id: 'class', label: 'Only class days' },
+            ]}
+          />
+        </Field>
       </Section>
 
       <Section title="Look">
@@ -187,6 +227,18 @@ export default function ControlPanel({
             <ThemeSwatch key={t.id} theme={t} selected={theme === t.id} onSelect={() => setTheme(t.id)} />
           ))}
         </div>
+        <Field label="Course label">
+          <Segmented
+            label="Course label"
+            value={courseLabel}
+            onChange={setCourseLabel}
+            options={[
+              { id: 'code', label: 'Code' },
+              { id: 'short', label: 'Short name' },
+              { id: 'both', label: 'Both' },
+            ]}
+          />
+        </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Clock">
             <Segmented
@@ -237,6 +289,22 @@ export default function ControlPanel({
                     </span>
                   </span>
                 </button>
+
+                {selected && (
+                  <label className="flex items-center gap-2 px-2 pt-2 pl-8 text-[0.8125rem] text-muted">
+                    Short name
+                    <input
+                      type="text"
+                      value={course.shortName ?? ''}
+                      onChange={(e) => onShortNameChange(e.target.value.toUpperCase())}
+                      maxLength={12}
+                      placeholder={course.code}
+                      spellCheck={false}
+                      autoCapitalize="characters"
+                      className="w-28 rounded-md border border-line bg-surface px-2 py-1 text-sm font-semibold text-ink uppercase transition-colors hover:border-teal/40"
+                    />
+                  </label>
+                )}
 
                 {selected && (
                   <div className="flex flex-wrap items-center gap-2 px-2 pt-2 pb-3 pl-8">

@@ -296,3 +296,47 @@ export const resolveWallpaperSize = (presetId, orientation = 'portrait') => {
   }
   return size;
 };
+
+// iPadOS reports itself as a Mac, so tell them apart by the touch screen.
+const isAppleDevice = () =>
+  /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+
+// Which lock screen the wallpaper is for: 'iphone', 'ipad' or 'android'.
+export const lockScreenPlatform = (size) => {
+  if (size.group === 'iPhone' || size.group === 'iPad') return size.group.toLowerCase();
+  if (size.id === 'device' && isAppleDevice()) return size.tablet ? 'ipad' : 'iphone';
+  return 'android';
+};
+
+// Where iOS lock screen widgets can sit. iOS 26 allows them under the clock or at the
+// bottom; an iPad in landscape puts them in a sidebar on the left instead.
+export const LOCK_WIDGETS = ['none', 'top', 'bottom'];
+
+// Share of the screen to keep clear of the timetable, so the lock screen's clock,
+// widgets and flashlight/camera buttons never cover it. iPhone values are measured
+// from iOS 26 lock screens; iPad values are estimates of the same layout.
+export const lockScreenInsets = (size, widgets = 'top') => {
+  const platform = lockScreenPlatform(size);
+  if (platform === 'iphone') {
+    return {
+      top: widgets === 'top' ? 0.385 : 0.27,
+      bottom: widgets === 'bottom' ? 0.25 : 0.14,
+      left: 0,
+    };
+  }
+  if (platform === 'ipad' && size.landscape) {
+    // Widgets on: the clock and the widget sidebar take the left third.
+    return widgets === 'none'
+      ? { top: 0.3, bottom: 0.12, left: 0 }
+      : { top: 0.06, bottom: 0.12, left: 0.34 };
+  }
+  if (platform === 'ipad') {
+    return {
+      top: widgets === 'top' ? 0.31 : 0.22,
+      bottom: widgets === 'bottom' ? 0.2 : 0.09,
+      left: 0,
+    };
+  }
+  // Android lock screens vary too much to measure; keep the clock area clear.
+  return { top: 0.25, bottom: 0.06, left: 0 };
+};

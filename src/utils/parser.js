@@ -25,10 +25,12 @@ export const DAY_LABELS = {
 
 const WEEKDAYS = ['MON', 'TUE', 'WED', 'THUR', 'FRI'];
 
-// Timetable columns: always Mon-Fri, plus weekend days only when a class falls on them.
-export const visibleDays = (schedules) => {
+// Timetable columns: Mon-Fri, plus weekend days only when a class falls on them.
+// With `classDaysOnly`, weekdays without a class (often Friday) are left out too.
+export const visibleDays = (schedules, classDaysOnly = false) => {
   const usedDays = new Set(schedules.map((s) => s.day));
-  return DAY_ORDER.filter((d) => WEEKDAYS.includes(d) || usedDays.has(d));
+  const days = DAY_ORDER.filter((d) => usedDays.has(d) || (!classDaysOnly && WEEKDAYS.includes(d)));
+  return days.length ? days : WEEKDAYS;
 };
 
 // Abbreviations IIUM uses in the "Day" column, e.g. M-W, T-TH, WED, THUR.
@@ -212,8 +214,33 @@ export const processLines = (lines) => {
     if (current && looksLikeSlot(line)) unreadable.push(line);
   }
 
+  for (const course of courses) course.shortName = abbreviate(course.title);
   return { courses, unreadable };
 };
+
+// Words left out of short names: "Data Structures and Algorithm" is DSA, not DSAA.
+// "al" is the Arabic article in titles like "Fiqh al-Maqasid".
+const MINOR_WORDS = new Set(['a', 'an', 'and', 'at', 'for', 'in', 'of', 'on', 'the', 'to', 'with', 'al', 'el']);
+const NUMERAL = /^(?:[IVX]+|\d+)$/i;
+
+// What a class block is titled with, per the "Course label" setting. With 'both', the
+// short name leads and the code follows. A course without a short name uses its code.
+export const courseLabels = (course, label = 'code') => {
+  const short = (course.shortName || '').trim();
+  if (label === 'code' || !short) return { primary: course.code, secondary: '' };
+  return { primary: short, secondary: label === 'both' ? course.code : '' };
+};
+
+// First letter of each word, e.g. "Data Structures and Algorithm" -> "DSA".
+// Hyphenated words count each part ("Co-Curriculum" -> "CC"); numbers and roman
+// numerals stay whole ("Calculus II" -> "CII").
+export const abbreviate = (title) =>
+  (title || '')
+    .split(/[\s\-–/]+/)
+    .map((word) => word.replace(/[^A-Za-z0-9]/g, ''))
+    .filter((word) => word && !MINOR_WORDS.has(word.toLowerCase()))
+    .map((word) => (NUMERAL.test(word) && word !== 'I' ? word.toUpperCase() : word[0].toUpperCase()))
+    .join('');
 
 const addSlots = (course, daysStr, startStr, endStr, period, venue) => {
   const days = daysStr
