@@ -11,6 +11,18 @@ const STEPS = [
   'Upload that PDF here.',
 ];
 
+// Android's file picker can hand over a PDF with no type and a name like "1000012345",
+// so fall back to the "%PDF-" signature near the start of the file.
+const looksLikePdf = async (file) => {
+  if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) return true;
+  try {
+    const head = new Uint8Array(await file.slice(0, 1024).arrayBuffer());
+    return String.fromCharCode(...head).includes('%PDF-');
+  } catch {
+    return false;
+  }
+};
+
 export default function PDFUploader({ onDataParsed }) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,8 +41,7 @@ export default function PDFUploader({ onDataParsed }) {
   const handleFile = async (file) => {
     if (!file) return;
     setErrorRows([]);
-    const looksLikePdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-    if (!looksLikePdf) {
+    if (!(await looksLikePdf(file))) {
       trackEvent(`slip-failed: ${failureReason({ error: 'not-pdf' })}`, 'Slip could not be read');
       setErrorMsg('That file isn’t a PDF. Save your confirmation slip as a PDF and upload it again.');
       return;

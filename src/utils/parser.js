@@ -54,6 +54,9 @@ const CREDITS = '(\\d{1,2}(?:\\.\\d+)?|\\.\\d+)';
 const COURSE_REST = new RegExp(`^(.*?)\\s+${CREDITS}(?:\\s+(${DAYS})\\s+${TIME}\\s*(.*))?$`);
 // Continuation line for a course with extra slots: "MON 2.00 - 3.30 PM [venue]"
 const EXTRA_SLOT = new RegExp(`^(${DAYS})\\s+${TIME}\\s*(.*)$`);
+// A long title wraps onto the next line, sharing it with that line's slot:
+// "SCHOOLS WED 2.00 - 3.20 PM EDU LR 15". The title part has no digits.
+const WRAPPED_SLOT = new RegExp(`^([^\\d]+?)\\s+(${DAYS})\\s+${TIME}\\s*(.*)$`);
 
 const defaultColors = COURSE_PALETTE.map((c) => c.hex);
 
@@ -188,6 +191,14 @@ export const processLines = (lines) => {
     const extra = current && line.match(EXTRA_SLOT);
     if (extra) {
       const [, days, start, end, period, venue] = extra;
+      addSlots(current, days, start, end, period, venue);
+      continue;
+    }
+
+    const wrapped = current && line.match(WRAPPED_SLOT);
+    if (wrapped) {
+      const [, titlePart, days, start, end, period, venue] = wrapped;
+      current.title = `${current.title}${current.title.endsWith('-') ? '' : ' '}${titlePart.trim()}`.trim();
       addSlots(current, days, start, end, period, venue);
       continue;
     }
