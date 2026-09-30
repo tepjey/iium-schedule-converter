@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { failureReason, trackEvent } from '../utils/analytics';
 import { parseConfirmationSlip } from '../utils/parser';
 import Khatam from './Khatam';
-import ReportPanel from './ReportPanel';
+import ReportLink from './ReportLink';
 
 const STEPS = [
   'Log in to i-Ma’luum. On the home page, find Favourite Links.',
@@ -15,20 +15,20 @@ export default function PDFUploader({ onDataParsed }) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  // What the opt-in report would contain, shown under the error.
-  const [report, setReport] = useState(null);
+  // Unreadable slip rows (long numbers already masked), pre-filled into the GitHub report.
+  const [errorRows, setErrorRows] = useState([]);
 
   // The reason (no slip content) is counted automatically so failures show up in the
   // dashboard even when nobody reports them.
   const fail = (message, reason, rows = []) => {
     trackEvent(`slip-failed: ${reason}`, 'Slip could not be read');
     setErrorMsg(message);
-    setReport({ reason, rows });
+    setErrorRows(rows);
   };
 
   const handleFile = async (file) => {
     if (!file) return;
-    setReport(null);
+    setErrorRows([]);
     const looksLikePdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
     if (!looksLikePdf) {
       trackEvent(`slip-failed: ${failureReason({ error: 'not-pdf' })}`, 'Slip could not be read');
@@ -157,11 +157,14 @@ export default function PDFUploader({ onDataParsed }) {
         </label>
 
         {errorMsg && (
-          <p role="alert" className="mt-4 rounded-lg border border-danger/20 bg-danger/5 px-4 py-3 text-sm text-danger">
-            {errorMsg}
-          </p>
+          <div role="alert" className="mt-4 rounded-lg border border-danger/20 bg-danger/5 px-4 py-3 text-sm">
+            <p className="text-danger">{errorMsg}</p>
+            <p className="mt-2 text-muted">
+              Still not working?{' '}
+              <ReportLink fields={{ result: errorMsg, 'slip-row': errorRows.join('\n') }} />
+            </p>
+          </div>
         )}
-        {report && <ReportPanel key={`${report.reason}|${report.rows.join('|')}`} {...report} />}
       </div>
     </section>
   );

@@ -12,7 +12,7 @@ export const initAnalytics = () => {
 };
 
 // Count an action (shown under "Events" in the GoatCounter dashboard). Returns false
-// if analytics is off or blocked (e.g. by an ad blocker), so callers can say so.
+// if analytics is off or blocked (e.g. by an ad blocker).
 export const trackEvent = (name, title = name) => {
   try {
     if (!window.goatcounter?.count) return false;
@@ -32,12 +32,4 @@ export const failureReason = ({ error, parsed }) => {
   if (parsed && !parsed.courses.length) return 'no courses found';
   const rows = parsed?.diagnostics.unreadableRows.length || 0;
   return `${rows} row${rows === 1 ? '' : 's'} unreadable`;
-};
-
-// The opt-in report: the reason plus each unreadable row (already masked), sent only
-// when the student taps "Send anonymous report" after seeing exactly what's included.
-export const sendReport = (reason, rows) => {
-  if (!trackEvent(`report: ${reason}`, 'Anonymous report')) return false;
-  rows.forEach((row) => trackEvent(`report-row: ${row}`, reason));
-  return true;
 };

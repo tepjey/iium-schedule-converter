@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tepjey.github.io/iium-schedule-converter/sitemap.xml

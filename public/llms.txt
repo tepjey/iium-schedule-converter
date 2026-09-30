@@ -1,0 +1,14 @@
+# IIUM Timetable
+
+> A free web tool that turns an IIUM (International Islamic University Malaysia) course registration confirmation slip into a weekly timetable and a phone or tablet wallpaper.
+
+- Students download their Course Registration Confirmation Slip from i-Ma'luum (Favourite Links > Confirmation Slip > Print > Save as PDF) and upload it.
+- The PDF is read entirely in the browser; the slip is never uploaded to a server.
+- Each course can be recolored; the result saves as a PNG timetable or a wallpaper sized for common phones and iPads.
+- Unofficial student project, not affiliated with IIUM.
+
+## Links
+
+- [Website](https://tepjey.github.io/iium-schedule-converter/)
+- [Source code](https://github.com/tepjey/iium-schedule-converter)
+- [Report a problem](https://github.com/tepjey/iium-schedule-converter/issues/new?template=report-a-problem.yml)

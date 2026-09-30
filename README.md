@@ -18,7 +18,7 @@ The PDF is read entirely in your browser with pdf.js. Nothing from your slip is 
 
 Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com), which uses no cookies and doesn't track you across sites. It also counts a few actions (slip read, slip failed, image saved) by name only. When a slip can't be read, the type of problem (for example "no courses found") is counted too, without any slip content.
 
-If a slip can't be read, the site offers an optional anonymous error report. It shows you exactly what will be sent before you send it: the timetable rows it couldn't understand (course code, day, time, venue), with any long number masked. Your name, matric and IC number are never sent.
+If a slip can't be read or an image won't save, the site links to a [GitHub issue form](https://github.com/tepjey/iium-schedule-converter/issues/new?template=report-a-problem.yml) with the error already filled in. Nothing is sent unless you submit that form yourself, and you can edit it first.
 
 ## How parsing works
 

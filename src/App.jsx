@@ -3,12 +3,13 @@ import { flushSync } from 'react-dom';
 import ControlPanel, { ExportButton } from './components/ControlPanel';
 import Khatam from './components/Khatam';
 import PDFUploader from './components/PDFUploader';
-import ReportPanel from './components/ReportPanel';
+import ReportLink from './components/ReportLink';
+import SavePreview from './components/SavePreview';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
 import { GITHUB_USERNAME } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
-import { exportToImage } from './utils/exporter';
+import { downloadImage, isInAppBrowser, isTouchDevice, renderImage, shareImage } from './utils/exporter';
 import { DEFAULT_THEME, THEMES, getTheme, resolveWallpaperSize } from './utils/theme';
 
 // Display preferences are remembered in this browser between visits.
@@ -65,6 +66,8 @@ export default function App() {
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState('');
+  // The rendered image and its object URL, when it's shown in the save preview.
+  const [savePreview, setSavePreview] = useState(null);
   const timetableRef = useRef(null);
   const wallpaperRef = useRef(null);
   const [previewAreaRef, previewAreaWidth] = useElementWidth();
@@ -88,7 +91,7 @@ export default function App() {
     setActiveCourseId(null);
 
     // The slip was read, but some class rows weren't understood, so classes may be
-    // missing. Count the reason (no slip content) and offer the opt-in report.
+    // missing. Count the reason (no slip content) and offer a GitHub report.
     const rows = parsed.diagnostics.unreadableRows;
     if (rows.length) {
       const reason = failureReason({ parsed });
@@ -111,29 +114,49 @@ export default function App() {
       setIsExporting(true);
       setExportError('');
     });
+    let file;
     try {
-      if (layout === 'wallpaper') {
-        await exportToImage(wallpaperRef, {
-          filename: `IIUM_Wallpaper_${wallpaperSize.width}x${wallpaperSize.height}.png`,
-          pixelRatio: wallpaperSize.pixelRatio,
-          outputWidth: wallpaperSize.width,
-          outputHeight: wallpaperSize.height,
-        });
-        trackEvent('saved-wallpaper', 'Saved wallpaper');
-      } else {
-        await exportToImage(timetableRef, {
-          filename: 'IIUM_Timetable.png',
-          pixelRatio: 3,
-          backgroundColor: colors.background,
-        });
-        trackEvent('saved-timetable', 'Saved timetable');
-      }
+      file =
+        layout === 'wallpaper'
+          ? await renderImage(wallpaperRef, {
+              filename: `IIUM_Wallpaper_${wallpaperSize.width}x${wallpaperSize.height}.png`,
+              pixelRatio: wallpaperSize.pixelRatio,
+              outputWidth: wallpaperSize.width,
+              outputHeight: wallpaperSize.height,
+            })
+          : await renderImage(timetableRef, {
+              filename: 'IIUM_Timetable.png',
+              pixelRatio: 3,
+              backgroundColor: colors.background,
+            });
     } catch (err) {
       console.error('Export failed:', err);
-      setExportError('The image couldn’t be saved. Try again, or use a different browser.');
+      trackEvent(`save-failed: ${String(err?.message || 'unknown').slice(0, 60)}`, 'Image could not be created');
+      setExportError(`The image couldn’t be created (${err?.message || 'unknown error'}). Try again, or use a different browser.`);
+      return;
     } finally {
       setIsExporting(false);
     }
+    trackEvent(layout === 'wallpaper' ? 'saved-wallpaper' : 'saved-timetable', `Saved ${layout}`);
+
+    // Laptops download the file. Phones get the share sheet, which is how iOS saves to
+    // Photos; if it can't open, the preview offers a fresh tap and a long-press instead.
+    const inApp = isInAppBrowser();
+    if (!isTouchDevice() && !inApp) {
+      downloadImage(file);
+      return;
+    }
+    if (!inApp) {
+      const result = await shareImage(file);
+      if (result !== 'unavailable') return;
+    }
+    trackEvent(inApp ? 'save-preview: in-app browser' : 'save-preview: share unavailable', 'Save preview shown');
+    setSavePreview({ file, url: URL.createObjectURL(file), inApp });
+  };
+
+  const closeSavePreview = () => {
+    URL.revokeObjectURL(savePreview.url);
+    setSavePreview(null);
   };
 
   const scheduledCourses = courses.filter((c) => !c.isUnscheduled);
@@ -189,9 +212,12 @@ export default function App() {
                 <p className="mt-1 text-sm text-muted">
                   {partialReport.rows.length === 1 ? 'A row' : `${partialReport.rows.length} rows`} on your slip
                   couldn’t be read, so {partialReport.rows.length === 1 ? 'that class isn’t' : 'those classes aren’t'} on
-                  the timetable yet.
+                  the timetable yet.{' '}
+                  <ReportLink fields={{ result: 'Some classes are missing.', 'slip-row': partialReport.rows.join('\n') }}>
+                    Report it on GitHub
+                  </ReportLink>{' '}
+                  so this slip format can be supported.
                 </p>
-                <ReportPanel reason={partialReport.reason} rows={partialReport.rows} />
               </div>
             )}
 
@@ -289,7 +315,7 @@ export default function App() {
             <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
               {exportError && (
                 <p role="alert" className="mb-2 text-sm text-danger">
-                  {exportError}
+                  {exportError} <ReportLink fields={{ result: exportError }}>Report it</ReportLink>
                 </p>
               )}
               <ExportButton onExport={handleExport} isExporting={isExporting} layout={layout} className="w-full" />
@@ -315,11 +341,23 @@ export default function App() {
             </p>
           )}
           <p>
-            An unofficial student project, not affiliated with IIUM. Your slip is processed on your device. Nothing from
-            it is sent unless you choose to send an error report.
+            An unofficial student project, not affiliated with IIUM. Your slip is processed on your device and never
+            uploaded.
+          </p>
+          <p>
+            Something not working? <ReportLink>Report a problem on GitHub</ReportLink>
           </p>
         </div>
       </footer>
+
+      {savePreview && (
+        <SavePreview
+          file={savePreview.file}
+          url={savePreview.url}
+          inAppBrowser={savePreview.inApp}
+          onClose={closeSavePreview}
+        />
+      )}
     </div>
   );
 }

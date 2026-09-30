@@ -1,5 +1,6 @@
 import { ChevronDown, Download, Loader2 } from 'lucide-react';
 import { COURSE_PALETTE, WALLPAPER_GROUPS, WALLPAPER_PRESETS, presetLabel, themesForMode } from '../utils/theme';
+import ReportLink from './ReportLink';
 
 const FONT_OPTIONS = [
   { id: 'font-sans', name: 'Jakarta Sans' },
@@ -277,7 +278,7 @@ export default function ControlPanel({
         <ExportButton onExport={onExport} isExporting={isExporting} layout={layout} className="w-full" />
         {exportError && (
           <p role="alert" className="mt-3 text-sm text-danger">
-            {exportError}
+            {exportError} <ReportLink fields={{ result: exportError }}>Report it</ReportLink>
           </p>
         )}
       </div>

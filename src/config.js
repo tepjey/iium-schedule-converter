@@ -6,6 +6,14 @@ export const GITHUB_USERNAME = 'tepjey';
 // visitor counter. Leave empty to turn analytics off.
 export const GOATCOUNTER_CODE = 'tepjey';
 
-// Where students can report a problem in more detail.
+// Where students report a problem, shown in the footer and under every error.
 export const REPORT_ISSUE_URL =
   'https://github.com/tepjey/iium-schedule-converter/issues/new?template=report-a-problem.yml';
+
+// The report form with fields already filled in, keyed by the field ids in
+// .github/ISSUE_TEMPLATE/report-a-problem.yml (e.g. { result: 'error message' }).
+export const reportIssueUrl = (fields = {}) => {
+  const url = new URL(REPORT_ISSUE_URL);
+  Object.entries(fields).forEach(([id, value]) => value && url.searchParams.set(id, value));
+  return url.toString();
+};

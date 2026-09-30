@@ -1,11 +1,15 @@
-// The legacy build is transpiled for older browsers such as iOS Safari.
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 // Vite does not resolve bare package paths inside `new URL(..., import.meta.url)`,
 // so the worker must be imported as an asset URL instead.
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { COURSE_PALETTE } from './theme';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+// pdf.js is most of the app's code, so it loads only once a slip is chosen.
+// The legacy build is transpiled for older browsers such as iOS Safari.
+const loadPdfjs = async () => {
+  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+  return pdfjsLib;
+};
 
 export const DAY_ORDER = ['MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT', 'SUN'];
 
@@ -57,7 +61,7 @@ const defaultColors = COURSE_PALETTE.map((c) => c.hex);
 const SESSION = /Session\s*:\s*(\d{4}\s*\/\s*\d{4})\s+Semester\s*:\s*(\d)/i;
 
 export const parseConfirmationSlip = async (file) => {
-  const arrayBuffer = await file.arrayBuffer();
+  const [pdfjsLib, arrayBuffer] = await Promise.all([loadPdfjs(), file.arrayBuffer()]);
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const lines = [];
 
