@@ -74,11 +74,58 @@ const toDataUrl = (blob) =>
     reader.readAsDataURL(blob);
   });
 
+// --- Blur --------------------------------------------------------------------------
+// A Gaussian blur made from three box blurs, which is smooth and looks the same on every
+// browser (canvas blur filters are missing on older iPhones). It runs on a smaller copy
+// of the photo, then is enlarged: after blurring there's no detail left to lose, so the
+// result stays smooth while the work stays fast on a phone.
+
+// Box widths whose three passes add up to a Gaussian of the given sigma.
+const boxSizes = (sigma) => {
+  let low = Math.floor(Math.sqrt((12 * sigma * sigma) / 3 + 1));
+  if (low % 2 === 0) low--;
+  const high = low + 2;
+  const lowCount = Math.round((12 * sigma * sigma - 3 * low * low - 12 * low - 9) / (-4 * low - 4));
+  return [0, 1, 2].map((i) => (i < lowCount ? low : high));
+};
+
+// One box blur along rows (step 4, `count` pixels per line) or columns, edges clamped.
+const boxPass = (src, dst, lines, count, lineStep, step, radius) => {
+  const scale = 1 / (radius * 2 + 1);
+  for (let line = 0; line < lines; line++) {
+    const base = line * lineStep;
+    for (let c = 0; c < 3; c++) {
+      const at = (i) => src[base + Math.min(count - 1, Math.max(0, i)) * step + c];
+      let sum = 0;
+      for (let k = -radius; k <= radius; k++) sum += at(k);
+      for (let i = 0; i < count; i++) {
+        dst[base + i * step + c] = sum * scale;
+        sum += at(i + radius + 1) - at(i - radius);
+      }
+    }
+  }
+};
+
+const gaussianBlur = (imageData, sigma) => {
+  const { data, width, height } = imageData;
+  let a = data;
+  let b = new Uint8ClampedArray(data);
+  for (const size of boxSizes(sigma)) {
+    const radius = (size - 1) / 2;
+    boxPass(a, b, height, width, width * 4, 4, radius); // rows
+    boxPass(b, a, width, height, 4, width * 4, radius); // columns
+  }
+  return imageData;
+};
+
+// Blur strength in photo pixels: the slider's 0-20 scales with the photo's size, so a
+// setting looks the same whatever the photo's resolution.
+const blurSigma = (blur, longSide) => (blur * longSide) / 1000;
+
 // The photo with blur and brightness baked in, as a data URL for the wallpaper.
 // Baking it in (rather than CSS filters) makes the saved image match the preview on
-// every browser. Blur is done by shrinking and enlarging the photo, which works even
-// where canvas filters don't (older iOS). A data URL rather than a blob: URL, because
-// the image saver re-fetches blob: URLs with a cache-busting query, which fails.
+// every browser. A data URL rather than a blob: URL, because the image saver re-fetches
+// blob: URLs with a cache-busting query, which fails.
 export const renderPhoto = async (blob, { blur = 0, brightness = 0 } = {}) => {
   const { img, url } = await loadImage(blob);
   try {
@@ -89,13 +136,20 @@ export const renderPhoto = async (blob, { blur = 0, brightness = 0 } = {}) => {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     if (blur > 0) {
-      const factor = 1 + blur * 0.9;
+      const longSide = Math.max(canvas.width, canvas.height);
+      const sigma = blurSigma(blur, longSide);
+      // Work small enough to be quick, but keep at least ~5px of blur on the small copy
+      // so enlarging it shows no steps.
+      const scale = Math.min(1, 5 / sigma, 1200 / longSide);
       const small = document.createElement('canvas');
-      small.width = Math.max(1, Math.round(canvas.width / factor));
-      small.height = Math.max(1, Math.round(canvas.height / factor));
+      small.width = Math.max(1, Math.round(canvas.width * scale));
+      small.height = Math.max(1, Math.round(canvas.height * scale));
       const sctx = small.getContext('2d');
+      sctx.imageSmoothingEnabled = true;
       sctx.imageSmoothingQuality = 'high';
       sctx.drawImage(img, 0, 0, small.width, small.height);
+      const pixels = sctx.getImageData(0, 0, small.width, small.height);
+      sctx.putImageData(gaussianBlur(pixels, sigma * scale), 0, 0);
       ctx.drawImage(small, 0, 0, canvas.width, canvas.height);
     } else {
       ctx.drawImage(img, 0, 0);
@@ -104,7 +158,7 @@ export const renderPhoto = async (blob, { blur = 0, brightness = 0 } = {}) => {
       ctx.fillStyle = brightness < 0 ? `rgba(0,0,0,${-brightness / 100})` : `rgba(255,255,255,${brightness / 100})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-    return await toDataUrl(await toBlob(canvas, 0.9));
+    return await toDataUrl(await toBlob(canvas, 0.92));
   } finally {
     URL.revokeObjectURL(url);
   }

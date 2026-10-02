@@ -37,7 +37,8 @@ export function usePhotoUrl(theme, photoBlob, version = 0) {
   useEffect(() => {
     if (!isPhoto) return undefined;
     let cancelled = false;
-    (async () => {
+    // Wait for the blur and brightness sliders to settle before redrawing the photo.
+    const timer = setTimeout(async () => {
       const blob = photoBlob || (await loadPhoto(id));
       if (!blob || cancelled) return;
       try {
@@ -46,9 +47,10 @@ export function usePhotoUrl(theme, photoBlob, version = 0) {
       } catch {
         // An unreadable photo leaves the theme's solid color showing.
       }
-    })();
+    }, 120);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [isPhoto, id, blur, brightness, photoBlob, version]);
 
