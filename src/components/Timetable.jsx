@@ -1,4 +1,4 @@
-import { calculateGridPosition, DAY_LABELS, formatHour, visibleDays } from '../utils/parser';
+import { calculateGridPosition, DAY_LABELS, formatHour, layoutLanes, slotKey, visibleDays } from '../utils/parser';
 import { blockColors, getTheme } from '../utils/theme';
 import SubjectCard from './SubjectCard';
 
@@ -26,6 +26,7 @@ export default function Timetable({
   const lastHour = Math.max(18, ...allSchedules.map((s) => Math.ceil(s.end / 60)));
   const hours = Array.from({ length: lastHour - firstHour }, (_, i) => i + firstHour);
   const totalRows = hours.length * ROWS_PER_HOUR;
+  const lanes = layoutLanes(courses);
 
   return (
     <div
@@ -116,6 +117,8 @@ export default function Timetable({
             const { startRow, span } = calculateGridPosition(schedule, firstHour);
             const isActive = showSelection && activeCourseId === course.id;
             const block = blockColors(course.color, colors);
+            // Overlapping classes split the day's column between them.
+            const { lane, lanes: laneCount } = lanes.get(slotKey(course, schedule)) || { lane: 0, lanes: 1 };
 
             return (
               <button
@@ -128,6 +131,9 @@ export default function Timetable({
                   gridColumn: dayIndex + 1,
                   gridRow: `${startRow} / span ${span}`,
                   margin: 2,
+                  marginLeft: `calc(${(lane * 100) / laneCount}% + 2px)`,
+                  width: `calc(${100 / laneCount}% - 4px)`,
+                  justifySelf: 'start',
                   // Buttons center their content by default; pin it to the top.
                   display: 'flex',
                   flexDirection: 'column',

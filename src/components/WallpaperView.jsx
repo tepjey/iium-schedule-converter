@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { DAY_LABELS, courseLabels, formatHour, formatTime, visibleDays } from '../utils/parser';
+import { DAY_LABELS, courseLabels, formatHour, formatTime, layoutLanes, slotKey, visibleDays } from '../utils/parser';
 import { blockColors, getTheme, lockScreenInsets } from '../utils/theme';
 import Khatam from './Khatam';
 
@@ -60,6 +60,7 @@ const WallpaperView = forwardRef(function WallpaperView(
   const pxPerMinute = gridHeight / (hours.length * 60);
   const columnWidth = (cardWidth - 2 - TIME_COLUMN) / days.length;
 
+  const lanes = layoutLanes(courses);
   const yFor = (minutes) => snap((minutes - firstHour * 60) * pxPerMinute);
   const xFor = (colIdx) => snap(TIME_COLUMN + colIdx * columnWidth);
   // Day names start where the text in the class blocks starts.
@@ -169,16 +170,25 @@ const WallpaperView = forwardRef(function WallpaperView(
               const blockHeight = yFor(schedule.end) - yFor(schedule.start) - 3;
               const isActive = showSelection && activeCourseId === course.id;
               const block = blockColors(course.color, colors);
+              // Overlapping classes split the day's column between them.
+              const { lane, lanes: laneCount } = lanes.get(slotKey(course, schedule)) || { lane: 0, lanes: 1 };
+              const laneWidth = (xFor(colIdx + 1) - xFor(colIdx)) / laneCount;
+              const left = snap(xFor(colIdx) + lane * laneWidth) + BLOCK_INSET;
+              const right = snap(xFor(colIdx) + (lane + 1) * laneWidth) - (lane === laneCount - 1 ? BLOCK_INSET : 1);
 
               // Show only the lines that fit whole, so short blocks never end in cut-off text.
-              // Lines are added in order of importance: label, code (with 'both'), time, venue.
+              // Lines are kept in order of importance: label, code (with 'both'), venue, then
+              // start time, which the grid already shows by the block's position.
               const { primary, secondary } = courseLabels(course, courseLabel);
               let room = blockHeight - BLOCK_PADDING * 2 - CODE_LINE;
               const showSecondary = Boolean(secondary) && room >= META_LINE;
               if (showSecondary) room -= META_LINE;
+              let venueLines = schedule.venue && room >= META_LINE ? 1 : 0;
+              room -= venueLines * META_LINE;
               const showTime = room >= META_LINE;
               if (showTime) room -= META_LINE;
-              const venueLines = schedule.venue ? Math.max(0, Math.floor(room / META_LINE)) : 0;
+              // A long venue may take a second line when there's still room.
+              if (venueLines && room >= META_LINE) venueLines = 2;
 
               return (
                 <button
@@ -190,8 +200,8 @@ const WallpaperView = forwardRef(function WallpaperView(
                     position: 'absolute',
                     top,
                     height: blockHeight,
-                    left: xFor(colIdx) + BLOCK_INSET,
-                    width: xFor(colIdx + 1) - xFor(colIdx) - BLOCK_INSET * 2,
+                    left,
+                    width: right - left,
                     // Buttons center their content by default; pin it to the top.
                     display: 'flex',
                     flexDirection: 'column',

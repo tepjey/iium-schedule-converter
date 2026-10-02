@@ -248,7 +248,8 @@ const addSlots = (course, daysStr, startStr, endStr, period, venue) => {
     .map((d) => DAY_ALIASES[d])
     .filter(Boolean);
   const { start, end } = toMinutesRange(startStr, endStr, period);
-  const cleanVenue = (venue || '').trim();
+  // Some slips print the room number twice ("AIKOL MM 2.5 2.5"); keep one.
+  const cleanVenue = (venue || '').trim().replace(/(\S+)\s+\1$/, '$1');
 
   for (const day of days) {
     course.schedules.push({
@@ -318,6 +319,39 @@ export const formatHour = (hour, format = '12h') => {
   if (format === '24h') return `${String(hour).padStart(2, '0')}:00`;
   const suffix = hour >= 12 ? 'PM' : 'AM';
   return `${hour % 12 === 0 ? 12 : hour % 12} ${suffix}`;
+};
+
+export const slotKey = (course, schedule) => `${course.id}-${schedule.day}-${schedule.start}`;
+
+// Classes at the same time (a clash, or alternative tutorial slots) share their day's
+// column side by side instead of hiding each other. Returns slotKey -> { lane, lanes }:
+// the block's position and how many lanes its group of overlapping classes needs.
+export const layoutLanes = (courses) => {
+  const slots = courses.flatMap((course) =>
+    (course.schedules || []).map((schedule) => ({ key: slotKey(course, schedule), ...schedule }))
+  );
+  const result = new Map();
+  for (const day of DAY_ORDER) {
+    const daySlots = slots.filter((s) => s.day === day).sort((a, b) => a.start - b.start || b.end - a.end);
+    let group = [];
+    let laneEnds = [];
+    let groupEnd = -1;
+    const closeGroup = () => {
+      for (const s of group) result.set(s.key, { lane: s.lane, lanes: laneEnds.length });
+      group = [];
+      laneEnds = [];
+    };
+    for (const slot of daySlots) {
+      if (slot.start >= groupEnd) closeGroup();
+      let lane = laneEnds.findIndex((end) => end <= slot.start);
+      if (lane === -1) lane = laneEnds.push(0) - 1;
+      laneEnds[lane] = slot.end;
+      group.push({ ...slot, lane });
+      groupEnd = Math.max(groupEnd, slot.end);
+    }
+    closeGroup();
+  }
+  return result;
 };
 
 // Timetable rows are 10-minute slots starting at `dayStartHour`.
