@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -31,10 +32,20 @@ const contentSecurityPolicy = () => ({
     ),
 })
 
+// The beta build (VITE_CHANNEL=beta, published at /beta/) stays out of search results.
+const betaNoIndex = () => ({
+  name: 'beta-noindex',
+  apply: () => process.env.VITE_CHANNEL === 'beta',
+  transformIndexHtml: (html) =>
+    html
+      .replace('<meta charset="UTF-8" />', '$&\n    <meta name="robots" content="noindex" />')
+      .replace(/<title>(.*?)<\/title>/, '<title>Beta · $1</title>'),
+})
+
 // https://vitejs.dev/config/
 export default defineConfig({
   // Relative asset paths so the build works at any GitHub Pages URL
   // (https://<user>.github.io/<repo>/) without hardcoding the repo name.
   base: './',
-  plugins: [react(), tailwindcss(), contentSecurityPolicy()],
+  plugins: [react(), tailwindcss(), contentSecurityPolicy(), betaNoIndex()],
 })

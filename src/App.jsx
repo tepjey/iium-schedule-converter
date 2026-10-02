@@ -9,7 +9,7 @@ import SavePreview from './components/SavePreview';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
 import WhatsNew from './components/WhatsNew';
-import { GITHUB_USERNAME } from './config';
+import { GITHUB_USERNAME, IS_BETA } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
 import { applySavedEdits, saveEdits, visibleCourses } from './utils/courseEdits';
@@ -232,6 +232,11 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             <Khatam size={22} strokeWidth={7} color="var(--color-teal)" />
             <span className="font-kufi text-xl font-medium tracking-tight whitespace-nowrap text-ink">IIUM Timetable</span>
+            {IS_BETA && (
+              <span className="rounded-full bg-brass/15 px-2 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-brass uppercase">
+                Beta
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -254,6 +259,15 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {IS_BETA && (
+        <div className="border-b border-brass/30 bg-brass/10 px-5 py-2 text-center text-[0.8125rem] text-ink sm:px-8">
+          You’re trying IIUM Timetable 2.0 early. Things may change or break.{' '}
+          <a href="../" className="font-medium text-teal underline underline-offset-4 hover:text-teal-deep">
+            Go to the regular site
+          </a>
+        </div>
+      )}
 
       <main className="mx-auto max-w-6xl px-5 pb-12 sm:px-8 lg:pb-16">
         {!hasData ? (

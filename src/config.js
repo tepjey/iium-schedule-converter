@@ -17,3 +17,8 @@ export const reportIssueUrl = (fields = {}) => {
   Object.entries(fields).forEach(([id, value]) => value && url.searchParams.set(id, value));
   return url.toString();
 };
+
+// True in the beta build published at /beta/ (VITE_CHANNEL=beta, set by the deploy
+// workflow). Shows the Beta badge and the link back to the regular site. The ?. covers
+// vite.config.js, which imports this file before Vite's env exists.
+export const IS_BETA = import.meta.env?.VITE_CHANNEL === 'beta';
