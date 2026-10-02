@@ -252,6 +252,13 @@ const addSlots = (course, daysStr, startStr, endStr, period, venue) => {
   const cleanVenue = (venue || '').trim().replace(/(\S+)\s+\1$/, '$1');
 
   for (const day of days) {
+    // Some slips repeat a slot on the line below the course (e.g. MTRB 1302's "M-W 2.00 -
+    // 3.20 PM" twice). Keep one, or the copy would halve the block as if it were a clash.
+    const twin = course.schedules.find((s) => s.day === day && s.start === start && s.end === end);
+    if (twin) {
+      if (!twin.venue) twin.venue = cleanVenue;
+      continue;
+    }
     course.schedules.push({
       day,
       start,
