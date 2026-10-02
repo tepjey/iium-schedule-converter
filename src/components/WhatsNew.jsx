@@ -22,7 +22,7 @@ export default function WhatsNew({ onClose }) {
       aria-labelledby="whats-new-title"
       className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-ink/60"
     >
-      <div className="flex items-center justify-between border-b border-line px-5 py-3">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-surface px-5 py-3">
         <h2 id="whats-new-title" className="text-base font-semibold">
           {ANNOUNCEMENT.title}
         </h2>

@@ -1,11 +1,27 @@
 // Bump the id whenever the list changes; each visitor sees a given announcement once.
 export const ANNOUNCEMENT = {
-  id: '2026-09-30',
+  id: '2026-10-03',
   title: 'New in IIUM Timetable',
   items: [
     {
+      title: 'Choose your tutorial times',
+      body: 'If your slip lists tutorial times you don’t attend, tap the course under Courses and untick them. They’re left off your timetable and wallpaper.',
+    },
+    {
+      title: 'No class time on your slip? Add it yourself',
+      body: 'If your department hasn’t set a course’s times yet, tap the course under Courses and choose Add class time once you know them.',
+    },
+    {
+      title: 'Classes at the same time, side by side',
+      body: 'Classes that overlap now share the column instead of hiding behind each other.',
+    },
+    {
+      title: 'Your changes are remembered',
+      body: 'Colors, short names, hidden class times and times you added come back when you upload the same slip again on this device.',
+    },
+    {
       title: 'Wallpapers that fit your lock screen',
-      body: 'On iPhone and iPad, the timetable now stays clear of the clock, widgets and flashlight and camera buttons. Tell it where your widgets are under Layout.',
+      body: 'On iPhone and iPad, the timetable stays clear of the clock, widgets and flashlight and camera buttons. Tell it where your widgets are under Layout.',
     },
     {
       title: 'Free Friday? Hide it',
@@ -21,7 +37,7 @@ export const ANNOUNCEMENT = {
     },
     {
       title: 'Fixes',
-      body: 'Classes no longer go missing when a course title is long, and Android phones can upload slips that were saved without a .pdf name.',
+      body: 'Classes no longer go missing when a course title is long, a class listed twice on the slip no longer shows at half width, and Android phones can upload slips saved without a .pdf name.',
     },
   ],
 };
