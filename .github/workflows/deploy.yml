@@ -1,10 +1,15 @@
-# Builds the site and publishes it to GitHub Pages on every push to main.
-# One-time setup: repo Settings > Pages > Build and deployment > Source: GitHub Actions.
+# Builds the site and publishes it to GitHub Pages on every push to main or v2.
+# One-time setup: repo Settings > Pages > Build and deployment > Source: GitHub Actions,
+# and allow both branches under Settings > Environments > github-pages.
+#
+# The live site is always built from main. If a v2 branch exists, it is built into
+# /beta/ in the same upload, so the beta can be tried without touching the live site.
+# A failing beta build is skipped and never blocks the live site from deploying.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, v2]
   workflow_dispatch:
 
 permissions:
@@ -21,17 +26,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
+          cache-dependency-path: site/package-lock.json
+      - name: Build the live site (main)
+        working-directory: site
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Check for a v2 branch
+        id: beta
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}.git" v2 >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.beta.outputs.exists == 'true'
+        with:
+          ref: v2
+          path: beta
+      - name: Build the beta (v2) into /beta/
+        if: steps.beta.outputs.exists == 'true'
+        continue-on-error: true
+        working-directory: beta
+        env:
+          VITE_CHANNEL: beta
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+          cp -r dist ../site/dist/beta
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site/dist
 
   deploy:
     needs: build
