@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Clock, Plus } from 'lucide-react';
 import { DAY_LABELS, DAY_ORDER } from '../utils/parser';
 
 const inputClass =
@@ -10,6 +10,35 @@ const toMinutes = (value) => {
   const [h, m] = value.split(':').map(Number);
   return h * 60 + m;
 };
+
+// The phone's own time picker. Grid cells can't squeeze it below Safari's built-in width
+// unless it's allowed to shrink (min-w-0), and iPhone Safari shows an empty time box as
+// blank, so "Set time" fills it until it's tapped.
+function TimeField({ label, value, onChange }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <label className="block min-w-0 text-[0.8125rem] text-muted">
+      {label}
+      <span className="relative mt-1 block">
+        <input
+          type="time"
+          step={300}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className={`time-input block h-9 min-w-0 appearance-none ${inputClass}`}
+        />
+        {!value && !focused && (
+          <span className="pointer-events-none absolute inset-px flex items-center gap-1.5 overflow-hidden rounded-md bg-surface px-2 text-sm whitespace-nowrap text-muted">
+            <Clock className="h-3.5 w-3.5 shrink-0 max-[359px]:hidden" />
+            Set time
+          </span>
+        )}
+      </span>
+    </label>
+  );
+}
 
 // A small form for entering class times the slip doesn't have, e.g. when a department
 // hasn't set them yet. Several days can share one time, like "M-W" on a slip.
@@ -90,16 +119,9 @@ export default function AddClassTime({ existing, startOpen = false, onAdd }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-        <label className="text-[0.8125rem] text-muted">
-          Starts
-          <input type="time" step={300} value={start} onChange={(e) => setStart(e.target.value)} className={`mt-1 ${inputClass}`} />
-        </label>
-        <span className="pb-2 text-[0.8125rem] text-muted">to</span>
-        <label className="text-[0.8125rem] text-muted">
-          Ends
-          <input type="time" step={300} value={end} onChange={(e) => setEnd(e.target.value)} className={`mt-1 ${inputClass}`} />
-        </label>
+      <div className="grid grid-cols-2 gap-3">
+        <TimeField label="Starts" value={start} onChange={setStart} />
+        <TimeField label="Ends" value={end} onChange={setEnd} />
       </div>
 
       <label className="block text-[0.8125rem] text-muted">

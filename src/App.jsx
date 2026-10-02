@@ -380,7 +380,7 @@ export default function App() {
                 )}
               </section>
 
-              <aside className="lg:sticky lg:top-6">
+              <aside className="min-w-0 lg:sticky lg:top-6">
                 <ControlPanel
                   courses={courses}
                   activeCourseId={activeCourseId}
