@@ -1,4 +1,4 @@
-import { ChevronDown, Download, Loader2, X } from 'lucide-react';
+import { ChevronDown, Download, Loader2, Pencil, Plus, X } from 'lucide-react';
 import { DAY_LABELS, formatRange } from '../utils/parser';
 import { COURSE_PALETTE, WALLPAPER_GROUPS, WALLPAPER_PRESETS, presetLabel, themesForMode } from '../utils/theme';
 import AddClassTime from './AddClassTime';
@@ -76,7 +76,7 @@ function ThemeSwatch({ theme, selected, onSelect }) {
       role="radio"
       aria-checked={selected}
       onClick={onSelect}
-      className={`rounded-lg border p-1 text-left transition-colors ${
+      className={`w-full rounded-lg border p-1 text-left transition-colors ${
         selected ? 'border-teal ring-1 ring-teal' : 'border-line hover:border-teal/40'
       }`}
     >
@@ -89,7 +89,7 @@ function ThemeSwatch({ theme, selected, onSelect }) {
           style={{ background: theme.background, border: `1px solid ${theme.border}` }}
         />
       </span>
-      <span className={`block px-1 pt-1.5 pb-0.5 text-xs ${selected ? 'font-semibold text-ink' : 'text-muted'}`}>
+      <span className={`block truncate px-1 pt-1.5 pb-0.5 text-xs ${selected ? 'font-semibold text-ink' : 'text-muted'}`}>
         {theme.name}
       </span>
     </button>
@@ -128,6 +128,11 @@ export default function ControlPanel({
   setThemeMode,
   theme,
   setTheme,
+  customThemes = [],
+  activeCustomId = '',
+  onSelectCustom,
+  onCreateCustom,
+  onEditCustom,
   timeFormat,
   setTimeFormat,
   layout,
@@ -234,6 +239,35 @@ export default function ControlPanel({
             <ThemeSwatch key={t.id} theme={t} selected={theme === t.id} onSelect={() => setTheme(t.id)} />
           ))}
         </div>
+        {(customThemes.length > 0 || onCreateCustom) && (
+          <Field label="Your themes">
+            <div role="radiogroup" aria-label="Your themes" className="grid grid-cols-3 gap-2">
+              {customThemes.map((t) => (
+                <div key={t.id} className="relative">
+                  <ThemeSwatch theme={t} selected={activeCustomId === t.id} onSelect={() => onSelectCustom(t.id)} />
+                  <button
+                    type="button"
+                    onClick={() => onEditCustom(t.id)}
+                    aria-label={`Edit ${t.name}`}
+                    className="absolute top-2 right-2 rounded-md bg-surface/90 p-1 text-ink shadow-[0_1px_2px_rgba(13,47,46,0.2)] transition-colors hover:bg-surface"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+              {onCreateCustom && (
+                <button
+                  type="button"
+                  onClick={onCreateCustom}
+                  className="flex min-h-[5.25rem] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-teal/50 p-1 text-xs font-medium text-teal transition-colors hover:bg-teal-wash"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create your own
+                </button>
+              )}
+            </div>
+          </Field>
+        )}
         <Field label="Course label">
           <Segmented
             label="Course label"

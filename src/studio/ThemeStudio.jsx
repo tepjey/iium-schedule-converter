@@ -1,0 +1,573 @@
+import { useEffect, useRef, useState } from 'react';
+import { Check, ChevronDown, ImagePlus, Link2, Loader2, Trash2, X } from 'lucide-react';
+import { THEMES } from '../utils/theme';
+import { preparePhoto } from './photoStore';
+import {
+  COLOR_KEYS,
+  COLOR_LABELS,
+  contrast,
+  paletteFromBase,
+  resolveTheme,
+  sanitizeTheme,
+  shareUrl,
+  themeFromPreset,
+} from './themeModel';
+import { usePhotoUrl } from './useCustomThemes';
+
+const BASE_COLORS = [
+  '#0f766e', '#2563eb', '#7c3aed', '#db2777', '#e11d48', '#ea580c',
+  '#ca8a04', '#16a34a', '#0891b2', '#475569', '#a16207', '#9f1239',
+];
+
+const DIRECTIONS = [
+  { angle: 180, label: 'Top to bottom', arrow: '↓' },
+  { angle: 135, label: 'Diagonal', arrow: '↘' },
+  { angle: 90, label: 'Left to right', arrow: '→' },
+  { angle: 45, label: 'Up diagonal', arrow: '↗' },
+];
+
+const clone = (value) => JSON.parse(JSON.stringify(value));
+
+function Segmented({ options, value, onChange, label }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex rounded-lg border border-line bg-limestone p-0.5">
+      {options.map((opt) => (
+        <button
+          key={opt.id}
+          type="button"
+          role="radio"
+          aria-checked={value === opt.id}
+          onClick={() => onChange(opt.id)}
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${
+            value === opt.id ? 'bg-surface font-semibold text-ink shadow-[0_1px_2px_rgba(13,47,46,0.12)]' : 'text-muted hover:text-ink'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <div>
+      <div className="mb-1.5 text-[0.8125rem] font-medium text-muted">{label}</div>
+      {children}
+      {hint && <p className="mt-1.5 text-[0.75rem] text-muted">{hint}</p>}
+    </div>
+  );
+}
+
+function ColorField({ label, value, onChange, warning }) {
+  return (
+    <label className="flex items-center gap-2.5 rounded-lg border border-line bg-surface px-2.5 py-2">
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-7 w-7 shrink-0 cursor-pointer rounded border border-line bg-transparent p-0"
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[0.8125rem] text-ink">{label}</span>
+        <span className="block font-mono text-[0.6875rem] text-muted uppercase">{value}</span>
+      </span>
+      {warning && <span className="shrink-0 rounded bg-danger/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-danger">{warning}</span>}
+    </label>
+  );
+}
+
+function Advanced({ children }) {
+  return (
+    <details className="group rounded-lg border border-line">
+      <summary className="panel-summary flex items-center justify-between px-3 py-2.5 text-[0.8125rem] font-semibold text-ink">
+        Advanced
+        <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="space-y-3 border-t border-line p-3">{children}</div>
+    </details>
+  );
+}
+
+function Slider({ label, value, min, max, onChange, format }) {
+  return (
+    <label className="block">
+      <span className="mb-1 flex justify-between text-[0.8125rem] text-muted">
+        {label}
+        <span className="text-ink tabular-nums">{format ? format(value) : value}</span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-teal"
+      />
+    </label>
+  );
+}
+
+// The Theme Studio: edit a custom theme with a live preview of the wallpaper.
+// `renderPreview(theme)` draws the student's own wallpaper with the draft theme.
+export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, onSave, onDelete, onClose }) {
+  const dialogRef = useRef(null);
+  const previewBoxRef = useRef(null);
+  const fileRef = useRef(null);
+  const [draft, setDraft] = useState(initialTheme);
+  const [photoBlob, setPhotoBlob] = useState(null);
+  const [tab, setTab] = useState('colors');
+  const [mode, setMode] = useState(() => resolveTheme(initialTheme).mode);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [box, setBox] = useState({ width: 0, height: 0 });
+
+  const photoUrl = usePhotoUrl(draft, photoBlob);
+  const resolved = resolveTheme(draft, photoUrl);
+  const width = size.width / size.pixelRatio;
+  const height = size.height / size.pixelRatio;
+  const scale = box.width ? Math.min(box.width / width, box.height / height, 1) : 0;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    // The page behind the full-screen studio shouldn't scroll along with it.
+    const { overflow } = document.documentElement.style;
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = overflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    const node = previewBoxRef.current;
+    if (!node) return undefined;
+    const observer = new ResizeObserver(([entry]) =>
+      setBox({ width: entry.contentRect.width, height: entry.contentRect.height })
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const update = (change) => setDraft((prev) => sanitizeTheme(change(clone(prev))));
+
+  const applyBase = (base, nextMode = mode) =>
+    update((t) => {
+      const { gradient, ...colors } = paletteFromBase(base, nextMode);
+      t.base = base;
+      t.colors = colors;
+      t.background.gradient = { ...gradient, via: '' };
+      t.background.color = gradient.to;
+      return t;
+    });
+
+  const applyPreset = (presetId) => {
+    const preset = themeFromPreset(presetId);
+    setMode(resolveTheme(preset).mode);
+    update((t) => ({ ...preset, id: t.id, name: t.name, background: { ...preset.background, photo: t.background.photo } }));
+  };
+
+  const pickPhoto = async (file) => {
+    if (!file) return;
+    setMessage('');
+    setBusy(true);
+    try {
+      setPhotoBlob(await preparePhoto(file));
+      update((t) => {
+        t.background.type = 'photo';
+        return t;
+      });
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const save = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      await onSave(draft, photoBlob);
+      dialogRef.current?.close();
+    } catch {
+      setMessage('The theme couldn’t be saved. Your browser may be out of space or in private mode.');
+      setBusy(false);
+    }
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl(draft));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setMessage('Couldn’t copy the link. Your browser blocked the clipboard.');
+    }
+  };
+
+  const { colors, background } = draft;
+  const textWarning = (key) => {
+    if (key !== 'text' && key !== 'mutedText') return '';
+    const ratio = Math.min(contrast(colors[key], colors.background), contrast(colors[key], colors.headerBackground));
+    return ratio < 4.5 ? 'Hard to read' : '';
+  };
+
+  return (
+    <dialog
+      ref={dialogRef}
+      onClose={onClose}
+      aria-labelledby="studio-title"
+      className="m-0 h-dvh max-h-none w-screen max-w-none bg-limestone p-0 text-ink backdrop:bg-ink/60 lg:m-auto lg:h-[min(52rem,calc(100dvh-3rem))] lg:w-[min(64rem,calc(100vw-3rem))] lg:rounded-2xl lg:border lg:border-line"
+    >
+      <div className="flex h-full flex-col">
+        <header className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2.5 sm:px-5">
+          <button
+            type="button"
+            onClick={() => dialogRef.current?.close()}
+            aria-label="Close without saving"
+            className="rounded-lg p-2 text-muted transition-colors hover:bg-teal-wash hover:text-ink"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <h2 id="studio-title" className="sr-only">
+            Theme Studio
+          </h2>
+          <input
+            value={draft.name}
+            onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value.slice(0, 30) }))}
+            onBlur={() => update((t) => t)}
+            aria-label="Theme name"
+            className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-base font-semibold text-ink hover:border-line focus:border-line"
+          />
+          <button
+            type="button"
+            onClick={save}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-limestone transition-colors hover:bg-teal-deep disabled:opacity-70"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Save
+          </button>
+        </header>
+
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(14rem,42%)_1fr] lg:grid-cols-[minmax(0,1fr)_24rem] lg:grid-rows-1">
+          <div ref={previewBoxRef} className="relative m-3 flex min-h-0 items-center justify-center sm:m-5">
+            {scale > 0 && (
+              <div
+                style={{ width: width * scale + 8, height: height * scale + 8 }}
+                className="overflow-hidden rounded-[1.75rem] border-4 border-ink shadow-[0_18px_40px_-20px_rgba(13,47,46,0.5)]"
+              >
+                <div style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                  {renderPreview(resolved)}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex min-h-0 flex-col border-t border-line bg-surface lg:border-t-0 lg:border-l">
+            <div className="px-4 pt-3 sm:px-5">
+              <Segmented
+                label="Studio section"
+                value={tab}
+                onChange={setTab}
+                options={[
+                  { id: 'colors', label: 'Colors' },
+                  { id: 'background', label: 'Background' },
+                ]}
+              />
+            </div>
+
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-5">
+              {tab === 'colors' && (
+                <>
+                  <Field label="Base color" hint="Every color is made from this one. Fine-tune them under Advanced.">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {BASE_COLORS.map((hex) => (
+                        <button
+                          key={hex}
+                          type="button"
+                          onClick={() => applyBase(hex)}
+                          aria-label={`Base color ${hex}`}
+                          className={`h-7 w-7 rounded-full transition-transform hover:scale-110 ${
+                            draft.base === hex ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface' : ''
+                          }`}
+                          style={{ backgroundColor: hex }}
+                        />
+                      ))}
+                      <label
+                        title="Any color"
+                        className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-dashed border-muted/60 text-xs text-muted hover:border-ink hover:text-ink"
+                      >
+                        +
+                        <input
+                          type="color"
+                          value={draft.base}
+                          onChange={(e) => applyBase(e.target.value)}
+                          className="sr-only"
+                          aria-label="Any base color"
+                        />
+                      </label>
+                    </div>
+                  </Field>
+
+                  <Field label="Light or dark">
+                    <Segmented
+                      label="Light or dark"
+                      value={mode}
+                      onChange={(next) => {
+                        setMode(next);
+                        applyBase(draft.base, next);
+                      }}
+                      options={[
+                        { id: 'light', label: 'Light' },
+                        { id: 'dark', label: 'Dark' },
+                      ]}
+                    />
+                  </Field>
+
+                  <Field label="Or start from a built-in theme">
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(THEMES).map(([id, t]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => applyPreset(id)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pr-2.5 pl-1 text-[0.8125rem] text-ink transition-colors hover:border-teal/40"
+                        >
+                          <span className="h-4 w-4 rounded-full border border-line" style={{ background: t.wallpaperBackground }} />
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+
+                  <Advanced>
+                    {COLOR_KEYS.map((key) => (
+                      <ColorField
+                        key={key}
+                        label={COLOR_LABELS[key]}
+                        value={colors[key]}
+                        warning={textWarning(key)}
+                        onChange={(value) =>
+                          update((t) => {
+                            t.colors[key] = value;
+                            return t;
+                          })
+                        }
+                      />
+                    ))}
+                  </Advanced>
+                </>
+              )}
+
+              {tab === 'background' && (
+                <>
+                  <Segmented
+                    label="Background type"
+                    value={background.type}
+                    onChange={(type) =>
+                      update((t) => {
+                        t.background.type = type;
+                        return t;
+                      })
+                    }
+                    options={[
+                      { id: 'solid', label: 'Solid' },
+                      { id: 'gradient', label: 'Gradient' },
+                      { id: 'photo', label: 'Photo' },
+                    ]}
+                  />
+
+                  {background.type === 'solid' && (
+                    <ColorField
+                      label="Background color"
+                      value={background.color}
+                      onChange={(value) =>
+                        update((t) => {
+                          t.background.color = value;
+                          return t;
+                        })
+                      }
+                    />
+                  )}
+
+                  {background.type === 'gradient' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['from', 'to'].map((end) => (
+                          <ColorField
+                            key={end}
+                            label={end === 'from' ? 'Start' : 'End'}
+                            value={background.gradient[end]}
+                            onChange={(value) =>
+                              update((t) => {
+                                t.background.gradient[end] = value;
+                                return t;
+                              })
+                            }
+                          />
+                        ))}
+                      </div>
+                      <Field label="Direction">
+                        <div className="flex gap-2">
+                          {DIRECTIONS.map((d) => (
+                            <button
+                              key={d.angle}
+                              type="button"
+                              aria-label={d.label}
+                              aria-pressed={background.gradient.angle === d.angle}
+                              onClick={() =>
+                                update((t) => {
+                                  t.background.gradient.angle = d.angle;
+                                  return t;
+                                })
+                              }
+                              className={`h-9 w-11 rounded-lg border text-base transition-colors ${
+                                background.gradient.angle === d.angle
+                                  ? 'border-teal bg-teal text-limestone'
+                                  : 'border-line bg-surface text-ink hover:border-teal/40'
+                              }`}
+                            >
+                              {d.arrow}
+                            </button>
+                          ))}
+                        </div>
+                      </Field>
+                      <Advanced>
+                        <label className="flex items-center gap-2 text-[0.8125rem] text-ink">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(background.gradient.via)}
+                            onChange={(e) =>
+                              update((t) => {
+                                t.background.gradient.via = e.target.checked ? colors.accent : '';
+                                return t;
+                              })
+                            }
+                            className="h-4 w-4 accent-teal"
+                          />
+                          Add a middle color
+                        </label>
+                        {background.gradient.via && (
+                          <ColorField
+                            label="Middle"
+                            value={background.gradient.via}
+                            onChange={(value) =>
+                              update((t) => {
+                                t.background.gradient.via = value;
+                                return t;
+                              })
+                            }
+                          />
+                        )}
+                        <Slider
+                          label="Angle"
+                          value={background.gradient.angle}
+                          min={0}
+                          max={359}
+                          format={(v) => `${v}°`}
+                          onChange={(angle) =>
+                            update((t) => {
+                              t.background.gradient.angle = angle;
+                              return t;
+                            })
+                          }
+                        />
+                      </Advanced>
+                    </>
+                  )}
+
+                  {background.type === 'photo' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={busy}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-teal/50 bg-teal-wash/40 px-4 py-3 text-sm font-semibold text-teal transition-colors hover:bg-teal-wash"
+                      >
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                        {photoUrl ? 'Choose a different photo' : 'Choose a photo'}
+                      </button>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(e) => {
+                          pickPhoto(e.target.files?.[0]);
+                          e.target.value = '';
+                        }}
+                      />
+                      <Slider
+                        label="Blur"
+                        value={background.photo.blur}
+                        min={0}
+                        max={20}
+                        onChange={(blur) =>
+                          update((t) => {
+                            t.background.photo.blur = blur;
+                            return t;
+                          })
+                        }
+                      />
+                      <Slider
+                        label="Darken or lighten"
+                        value={background.photo.brightness}
+                        min={-60}
+                        max={60}
+                        format={(v) => (v === 0 ? 'Off' : v < 0 ? `Darker ${-v}%` : `Lighter ${v}%`)}
+                        onChange={(brightness) =>
+                          update((t) => {
+                            t.background.photo.brightness = brightness;
+                            return t;
+                          })
+                        }
+                      />
+                      <p className="text-[0.75rem] text-muted">
+                        Your photo stays on this device. It isn’t uploaded or included in share links.
+                      </p>
+                    </>
+                  )}
+                </>
+              )}
+
+              {message && (
+                <p role="alert" className="text-[0.8125rem] text-danger">
+                  {message}
+                </p>
+              )}
+            </div>
+
+            <footer className="flex items-center gap-2 border-t border-line px-4 py-3 sm:px-5">
+              <button
+                type="button"
+                onClick={copyLink}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-teal transition-colors hover:bg-teal-wash"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
+                {copied ? 'Link copied' : 'Copy share link'}
+              </button>
+              {!isNew && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Delete “${draft.name}”? This can’t be undone.`)) {
+                      onDelete(draft.id);
+                      dialogRef.current?.close();
+                    }
+                  }}
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-danger/5 hover:text-danger"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              )}
+            </footer>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  );
+}

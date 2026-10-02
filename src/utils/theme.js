@@ -168,7 +168,9 @@ export const themesForMode = (mode) =>
     .filter(([, t]) => t.mode === mode)
     .map(([id, t]) => ({ id, ...t }));
 
-export const getTheme = (id) => THEMES[id] || THEMES.classic;
+// A built-in theme by id, or a custom theme's resolved colors passed in directly (2.0).
+export const getTheme = (theme) =>
+  theme && typeof theme === 'object' ? theme : THEMES[theme] || THEMES.classic;
 
 // Course colors, tuned to sit alongside the teal/sandstone palette. Each is the
 // strong "edge" color; block fills and text are derived from it per theme.
@@ -190,7 +192,7 @@ const toRgb = (hex) => {
 };
 
 // Blend `amount` of color a into color b.
-const mix = (a, b, amount) => {
+export const mix = (a, b, amount) => {
   const [ar, ag, ab] = toRgb(a);
   const [br, bg, bb] = toRgb(b);
   const c = (x, y) => Math.round(x * amount + y * (1 - amount)).toString(16).padStart(2, '0');

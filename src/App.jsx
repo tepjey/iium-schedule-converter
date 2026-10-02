@@ -9,6 +9,10 @@ import SavePreview from './components/SavePreview';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
 import WhatsNew from './components/WhatsNew';
+import SharedThemeDialog from './studio/SharedThemeDialog';
+import ThemeStudio from './studio/ThemeStudio';
+import { resolveTheme, themeFromHash, themeFromPreset } from './studio/themeModel';
+import { useCustomThemes } from './studio/useCustomThemes';
 import { GITHUB_USERNAME, IS_BETA } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
@@ -96,7 +100,32 @@ export default function App() {
   const pickedTheme = mode === 'dark' ? darkTheme : lightTheme;
   const theme = THEMES[pickedTheme]?.mode === mode ? pickedTheme : DEFAULT_THEME[mode];
   const setTheme = mode === 'dark' ? setDarkTheme : setLightTheme;
-  const colors = getTheme(theme);
+  // 2.0 Theme Studio: a custom theme, when one is in use, replaces the built-in one.
+  const customThemes = useCustomThemes();
+  const activeCustom = customThemes.active;
+  const themeToDraw = activeCustom ? resolveTheme(activeCustom, customThemes.activePhotoUrl) : theme;
+  const colors = getTheme(themeToDraw);
+  // The theme being edited in the studio: { theme, isNew }.
+  const [studio, setStudio] = useState(null);
+  // A theme opened from a share link, waiting for the student to add it.
+  const [sharedTheme, setSharedTheme] = useState(() => themeFromHash(window.location.hash));
+  useEffect(() => {
+    // Clear the link's theme code from the address bar so a reload doesn't ask again.
+    const clearHash = () => {
+      if (window.location.hash.startsWith('#theme=')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    clearHash();
+    // A share link pasted into a tab that already has the site open only changes the hash.
+    const onHashChange = () => {
+      const shared = themeFromHash(window.location.hash);
+      if (shared) setSharedTheme(shared);
+      clearHash();
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   const wallpaperSize = resolveWallpaperSize(wallpaperPreset, orientation);
   const platform = lockScreenPlatform(wallpaperSize);
   const widgetPlacement = LOCK_WIDGETS.includes(lockWidgets) ? lockWidgets : 'top';
@@ -340,7 +369,7 @@ export default function App() {
                           unscheduledCourses={unscheduledCourses}
                           semester={semester}
                           size={wallpaperSize}
-                          theme={theme}
+                          theme={themeToDraw}
                           timeFormat={timeFormat}
                           classDaysOnly={classDaysOnly}
                           lockWidgets={widgetPlacement}
@@ -377,7 +406,7 @@ export default function App() {
                         courses={scheduledCourses}
                         activeCourseId={activeCourseId}
                         onSelectCourse={setActiveCourseId}
-                        theme={theme}
+                        theme={themeToDraw}
                         timeFormat={timeFormat}
                         classDaysOnly={classDaysOnly}
                         courseLabel={label}
@@ -410,9 +439,31 @@ export default function App() {
                   fontFamily={fontFamily}
                   setFontFamily={setFontFamily}
                   themeMode={mode}
-                  setThemeMode={setThemeMode}
-                  theme={theme}
-                  setTheme={setTheme}
+                  setThemeMode={(next) => {
+                    customThemes.select('');
+                    setThemeMode(next);
+                  }}
+                  theme={activeCustom ? '' : theme}
+                  setTheme={(id) => {
+                    customThemes.select('');
+                    setTheme(id);
+                  }}
+                  customThemes={customThemes.themes.map((t) => ({ id: t.id, ...resolveTheme(t) }))}
+                  activeCustomId={activeCustom?.id || ''}
+                  onSelectCustom={customThemes.select}
+                  onCreateCustom={
+                    customThemes.canAddMore
+                      ? () =>
+                          setStudio({
+                            theme: themeFromPreset(theme, `My theme ${customThemes.themes.length + 1}`),
+                            isNew: true,
+                          })
+                      : null
+                  }
+                  onEditCustom={(id) => {
+                    const existing = customThemes.themes.find((t) => t.id === id);
+                    if (existing) setStudio({ theme: existing, isNew: false });
+                  }}
                   timeFormat={timeFormat}
                   setTimeFormat={setTimeFormat}
                   layout={layout}
@@ -472,7 +523,41 @@ export default function App() {
         </div>
       </footer>
 
-      {showWhatsNew && <WhatsNew onClose={() => setShowWhatsNew(false)} />}
+      {showWhatsNew && !sharedTheme && <WhatsNew onClose={() => setShowWhatsNew(false)} />}
+
+      {sharedTheme && (
+        <SharedThemeDialog
+          theme={sharedTheme}
+          onAdd={(t) => customThemes.saveTheme(t)}
+          onClose={() => setSharedTheme(null)}
+        />
+      )}
+
+      {studio && (
+        <ThemeStudio
+          initialTheme={studio.theme}
+          isNew={studio.isNew}
+          size={wallpaperSize}
+          renderPreview={(previewTheme) => (
+            <WallpaperView
+              courses={scheduledCourses}
+              unscheduledCourses={unscheduledCourses}
+              semester={semester}
+              size={wallpaperSize}
+              theme={previewTheme}
+              timeFormat={timeFormat}
+              classDaysOnly={classDaysOnly}
+              lockWidgets={widgetPlacement}
+              courseLabel={label}
+              fontClass={fontFamily}
+              showSelection={false}
+            />
+          )}
+          onSave={(t, photo) => customThemes.saveTheme(t, photo)}
+          onDelete={customThemes.deleteTheme}
+          onClose={() => setStudio(null)}
+        />
+      )}
 
       {savePreview && (
         <SavePreview
