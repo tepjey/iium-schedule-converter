@@ -1,4 +1,5 @@
 import { THEMES, mix } from '../utils/theme';
+import { sanitizeStyle } from './styleModel';
 
 // A custom theme (2.0 Theme Studio). It resolves to the same set of colors as a built-in
 // theme (see THEMES in utils/theme.js), so the timetable and wallpaper draw it with no
@@ -140,19 +141,23 @@ export const sanitizeTheme = (raw) => {
         brightness: clamp(photo.brightness, -60, 60, 0),
       },
     },
+    // Card, blocks, text and grid (see styleModel.js).
+    style: sanitizeStyle(t.style),
   };
 };
 
 const gradientCss = ({ from, via, to, angle }) =>
   `linear-gradient(${angle}deg, ${from} 0%, ${via ? `${via} 50%, ` : ''}${to} 100%)`;
 
-// The colors the timetable and wallpaper draw with. `photoUrl` is the student's
-// processed background photo, when the theme uses one and it has loaded.
-export const resolveTheme = (theme, photoUrl = '') => {
+// The colors and style the timetable and wallpaper draw with. `photo` is the student's
+// processed background photo ({ url, width, height, frostUrl }, see usePhoto), when the
+// theme uses one and it has loaded.
+export const resolveTheme = (theme, photo = null) => {
   const { colors, background } = theme;
+  const usePhoto = background.type === 'photo' && photo?.url;
   let wallpaperBackground;
-  if (background.type === 'photo' && photoUrl) {
-    wallpaperBackground = `url("${photoUrl}") center / cover no-repeat, ${background.color}`;
+  if (usePhoto) {
+    wallpaperBackground = `url("${photo.url}") center / cover no-repeat, ${background.color}`;
   } else if (background.type === 'solid' || background.type === 'photo') {
     wallpaperBackground = background.color;
   } else {
@@ -165,6 +170,9 @@ export const resolveTheme = (theme, photoUrl = '') => {
     mode: isDark(colors.background) ? 'dark' : 'light',
     wallpaperBackground,
     activeRing: colors.text,
+    style: theme.style,
+    // The photo's size and frosted copy, for a see-through card to line up with.
+    photo: usePhoto ? { width: photo.width, height: photo.height, frostUrl: photo.frostUrl } : null,
   };
 };
 

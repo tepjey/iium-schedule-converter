@@ -25,14 +25,18 @@ const store = (key, value) => {
   }
 };
 
-// The background photo of `theme`, with its blur and brightness applied, as a data URL.
+// The background photo of `theme`, with its blur and brightness applied:
+// { url, width, height, frostUrl }, or null. `frostUrl` is a much blurrier copy for a
+// see-through card to show behind it, made only when the theme's card needs one.
 // `version` changes when a new photo is saved for the same theme.
-export function usePhotoUrl(theme, photoBlob, version = 0) {
+export function usePhoto(theme, photoBlob, version = 0) {
   // Tagged with its theme, so switching themes never shows the previous theme's photo.
-  const [photo, setPhoto] = useState({ id: '', url: '' });
+  const [photo, setPhoto] = useState({ id: '', value: null });
   const isPhoto = theme?.background.type === 'photo';
   const id = theme?.id;
   const { blur, brightness } = theme?.background.photo || {};
+  const style = theme?.style;
+  const needsFrost = Boolean(isPhoto && style && style.cardOpacity < 100 && style.cardFrost);
 
   useEffect(() => {
     if (!isPhoto) return undefined;
@@ -42,8 +46,9 @@ export function usePhotoUrl(theme, photoBlob, version = 0) {
       const blob = photoBlob || (await loadPhoto(id));
       if (!blob || cancelled) return;
       try {
-        const made = await renderPhoto(blob, { blur, brightness });
-        if (!cancelled) setPhoto({ id, url: made });
+        const main = await renderPhoto(blob, { blur, brightness });
+        const frost = needsFrost ? await renderPhoto(blob, { blur: Math.min(20, blur + 12), brightness }) : null;
+        if (!cancelled) setPhoto({ id, value: { ...main, frostUrl: frost?.url || '' } });
       } catch {
         // An unreadable photo leaves the theme's solid color showing.
       }
@@ -52,9 +57,9 @@ export function usePhotoUrl(theme, photoBlob, version = 0) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [isPhoto, id, blur, brightness, photoBlob, version]);
+  }, [isPhoto, id, blur, brightness, needsFrost, photoBlob, version]);
 
-  return isPhoto && photo.id === id ? photo.url : '';
+  return isPhoto && photo.id === id ? photo.value : null;
 }
 
 export function useCustomThemes() {
@@ -73,7 +78,7 @@ export function useCustomThemes() {
   useEffect(() => store(ACTIVE_KEY, activeId), [activeId]);
 
   const active = themes.find((t) => t.id === activeId) || null;
-  const activePhotoUrl = usePhotoUrl(active, null, photoVersion);
+  const activePhoto = usePhoto(active, null, photoVersion);
 
   // Save a new or edited theme (and its new photo, if one was picked) and use it.
   const saveTheme = async (theme, photoBlob = null) => {
@@ -99,7 +104,7 @@ export function useCustomThemes() {
   return {
     themes,
     active,
-    activePhotoUrl,
+    activePhoto,
     select: setActiveId,
     saveTheme,
     deleteTheme,

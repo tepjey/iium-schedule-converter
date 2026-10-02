@@ -103,7 +103,7 @@ export default function App() {
   // 2.0 Theme Studio: a custom theme, when one is in use, replaces the built-in one.
   const customThemes = useCustomThemes();
   const activeCustom = customThemes.active;
-  const themeToDraw = activeCustom ? resolveTheme(activeCustom, customThemes.activePhotoUrl) : theme;
+  const themeToDraw = activeCustom ? resolveTheme(activeCustom, customThemes.activePhoto) : theme;
   const colors = getTheme(themeToDraw);
   // The theme being edited in the studio: { theme, isNew }.
   const [studio, setStudio] = useState(null);

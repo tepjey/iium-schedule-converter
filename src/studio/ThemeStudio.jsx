@@ -12,7 +12,8 @@ import {
   shareUrl,
   themeFromPreset,
 } from './themeModel';
-import { usePhotoUrl } from './useCustomThemes';
+import { FONTS, blockBorders, blockLook, loadFont } from './styleModel';
+import { usePhoto } from './useCustomThemes';
 
 const BASE_COLORS = [
   '#0f766e', '#2563eb', '#7c3aed', '#db2777', '#e11d48', '#ea580c',
@@ -24,6 +25,13 @@ const DIRECTIONS = [
   { angle: 135, label: 'Diagonal', arrow: '↘' },
   { angle: 90, label: 'Left to right', arrow: '→' },
   { angle: 45, label: 'Up diagonal', arrow: '↗' },
+];
+
+const BLOCK_STYLES = [
+  { id: 'tint', label: 'Soft tint' },
+  { id: 'solid', label: 'Solid' },
+  { id: 'outline', label: 'Outline' },
+  { id: 'glass', label: 'Glass' },
 ];
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -77,6 +85,44 @@ function ColorField({ label, value, onChange, warning }) {
   );
 }
 
+function Toggle({ label, checked, onChange, hint }) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3 py-0.5">
+      <span>
+        <span className="block text-[0.8125rem] text-ink">{label}</span>
+        {hint && <span className="block text-[0.75rem] text-muted">{hint}</span>}
+      </span>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
+      <span
+        aria-hidden="true"
+        className="relative h-5 w-9 shrink-0 rounded-full bg-line transition-colors peer-checked:bg-teal peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-surface after:transition-transform peer-checked:after:translate-x-4"
+      />
+    </label>
+  );
+}
+
+// Section tabs that scroll sideways when they don't fit (five tabs on a phone).
+function Tabs({ tabs, value, onChange }) {
+  return (
+    <div role="tablist" aria-label="Studio sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          onClick={() => onChange(t.id)}
+          className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
+            value === t.id ? 'bg-teal font-semibold text-limestone' : 'bg-limestone text-muted hover:text-ink'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Advanced({ children }) {
   return (
     <details className="group rounded-lg border border-line">
@@ -123,8 +169,9 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
   const [copied, setCopied] = useState(false);
   const [box, setBox] = useState({ width: 0, height: 0 });
 
-  const photoUrl = usePhotoUrl(draft, photoBlob);
-  const resolved = resolveTheme(draft, photoUrl);
+  const photo = usePhoto(draft, photoBlob);
+  const photoUrl = photo?.url || '';
+  const resolved = resolveTheme(draft, photo);
   const width = size.width / size.pixelRatio;
   const height = size.height / size.pixelRatio;
   const scale = box.width ? Math.min(box.width / width, box.height / height, 1) : 0;
@@ -151,6 +198,17 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
   }, []);
 
   const update = (change) => setDraft((prev) => sanitizeTheme(change(clone(prev))));
+  const setStyle = (key, value) =>
+    update((t) => {
+      t.style[key] = value;
+      return t;
+    });
+  const { style } = draft;
+
+  // Font buttons show each font, so load them all when the Text tab opens.
+  useEffect(() => {
+    if (tab === 'text') Object.keys(FONTS).forEach(loadFont);
+  }, [tab]);
 
   const applyBase = (base, nextMode = mode) =>
     update((t) => {
@@ -268,13 +326,15 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
 
           <div className="flex min-h-0 flex-col border-t border-line bg-surface lg:border-t-0 lg:border-l">
             <div className="px-4 pt-3 sm:px-5">
-              <Segmented
-                label="Studio section"
+              <Tabs
                 value={tab}
                 onChange={setTab}
-                options={[
+                tabs={[
                   { id: 'colors', label: 'Colors' },
                   { id: 'background', label: 'Background' },
+                  { id: 'card', label: 'Card' },
+                  { id: 'blocks', label: 'Blocks' },
+                  { id: 'text', label: 'Text' },
                 ]}
               />
             </div>
@@ -530,6 +590,180 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                       </p>
                     </>
                   )}
+                </>
+              )}
+
+              {tab === 'card' && (
+                <>
+                  <Slider
+                    label="Card opacity"
+                    value={style.cardOpacity}
+                    min={30}
+                    max={100}
+                    format={(v) => (v === 100 ? 'Solid' : `${v}%`)}
+                    onChange={(v) => setStyle('cardOpacity', v)}
+                  />
+                  {style.cardOpacity < 100 && background.type === 'photo' && (
+                    <Toggle
+                      label="Frosted glass"
+                      hint="Blur the photo behind the card"
+                      checked={style.cardFrost}
+                      onChange={(v) => setStyle('cardFrost', v)}
+                    />
+                  )}
+                  <Slider
+                    label="Corner roundness"
+                    value={style.cardRadius}
+                    min={0}
+                    max={28}
+                    onChange={(v) => setStyle('cardRadius', v)}
+                  />
+                  <Advanced>
+                    <Toggle label="Border" checked={style.cardBorder} onChange={(v) => setStyle('cardBorder', v)} />
+                    <Field label="Shadow">
+                      <Segmented
+                        label="Shadow"
+                        value={style.cardShadow}
+                        onChange={(v) => setStyle('cardShadow', v)}
+                        options={[
+                          { id: 'none', label: 'None' },
+                          { id: 'soft', label: 'Soft' },
+                          { id: 'strong', label: 'Strong' },
+                        ]}
+                      />
+                    </Field>
+                    <Field label="Day header">
+                      <Segmented
+                        label="Day header"
+                        value={style.header}
+                        onChange={(v) => setStyle('header', v)}
+                        options={[
+                          { id: 'filled', label: 'Filled' },
+                          { id: 'plain', label: 'Plain' },
+                        ]}
+                      />
+                    </Field>
+                    <Toggle label="Hour lines" checked={style.hourLines} onChange={(v) => setStyle('hourLines', v)} />
+                    <Toggle label="Day lines" checked={style.dayLines} onChange={(v) => setStyle('dayLines', v)} />
+                    <Toggle
+                      label="Semester line on a card"
+                      hint="Easier to read over a busy photo"
+                      checked={style.footerCard}
+                      onChange={(v) => setStyle('footerCard', v)}
+                    />
+                  </Advanced>
+                </>
+              )}
+
+              {tab === 'blocks' && (
+                <>
+                  <Field label="Class block style">
+                    <div className="grid grid-cols-2 gap-2">
+                      {BLOCK_STYLES.map((option) => {
+                        const look = blockLook('#2563eb', resolved, { ...style, blockStyle: option.id });
+                        const selected = style.blockStyle === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => setStyle('blockStyle', option.id)}
+                            className={`rounded-lg border p-1.5 text-left transition-colors ${
+                              selected ? 'border-teal ring-1 ring-teal' : 'border-line hover:border-teal/40'
+                            }`}
+                          >
+                            <span className="block rounded-md p-2" style={{ background: resolved.wallpaperBackground }}>
+                              <span className="block rounded p-1.5" style={{ background: resolved.background }}>
+                                <span
+                                  className="block px-1.5 py-1 text-[0.6875rem] leading-tight font-bold"
+                                  style={{
+                                    background: look.fill,
+                                    color: look.text,
+                                    ...blockBorders(look, style.blockEdge ? 2 : 0),
+                                    borderRadius: style.blockRadius,
+                                  }}
+                                >
+                                  DSA
+                                  <span className="block font-normal opacity-85">10:00 AM</span>
+                                </span>
+                              </span>
+                            </span>
+                            <span className={`block px-0.5 pt-1.5 text-xs ${selected ? 'font-semibold text-ink' : 'text-muted'}`}>
+                              {option.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+                  <Slider
+                    label="Corner roundness"
+                    value={style.blockRadius}
+                    min={0}
+                    max={12}
+                    onChange={(v) => setStyle('blockRadius', v)}
+                  />
+                  <Advanced>
+                    <Toggle
+                      label="Colored edge"
+                      hint="The strip of course color on the left"
+                      checked={style.blockEdge}
+                      onChange={(v) => setStyle('blockEdge', v)}
+                    />
+                  </Advanced>
+                </>
+              )}
+
+              {tab === 'text' && (
+                <>
+                  <Field label="Font">
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(FONTS).map(([id, font]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-pressed={style.font === id}
+                          onClick={() => setStyle('font', id)}
+                          className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                            style.font === id ? 'border-teal bg-teal-wash/50 ring-1 ring-teal' : 'border-line hover:border-teal/40'
+                          }`}
+                        >
+                          <span
+                            className="block text-base leading-tight text-ink"
+                            style={font.family ? { fontFamily: font.family } : undefined}
+                          >
+                            {id === 'default' ? 'Aa' : 'Mon 10:00'}
+                          </span>
+                          <span className="block text-[0.75rem] text-muted">{font.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                  <Field label="Text size">
+                    <Segmented
+                      label="Text size"
+                      value={style.textSize}
+                      onChange={(v) => setStyle('textSize', v)}
+                      options={[
+                        { id: 's', label: 'Small' },
+                        { id: 'm', label: 'Medium' },
+                        { id: 'l', label: 'Large' },
+                      ]}
+                    />
+                  </Field>
+                  <Advanced>
+                    <Field label="Course names">
+                      <Segmented
+                        label="Course name weight"
+                        value={style.titleWeight}
+                        onChange={(v) => setStyle('titleWeight', v)}
+                        options={[
+                          { id: 'bold', label: 'Bold' },
+                          { id: 'medium', label: 'Medium' },
+                        ]}
+                      />
+                    </Field>
+                  </Advanced>
                 </>
               )}
 

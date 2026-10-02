@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { calculateGridPosition, DAY_LABELS, formatHour, layoutLanes, slotKey, visibleDays } from '../utils/parser';
-import { blockColors, getTheme } from '../utils/theme';
+import { DEFAULT_STYLE, FONTS, blockBorders, blockLook, loadFont } from '../studio/styleModel';
+import { getTheme } from '../utils/theme';
 import SubjectCard from './SubjectCard';
 
 const ROWS_PER_HOUR = 6;
@@ -18,6 +20,12 @@ export default function Timetable({
   courseLabel = 'code',
 }) {
   const colors = getTheme(theme);
+  // A custom theme's block style, font and grid lines (2.0); the defaults are the original look.
+  const style = colors.style || DEFAULT_STYLE;
+  const fontFamily = FONTS[style.font]?.family;
+  useEffect(() => {
+    loadFont(style.font);
+  }, [style.font]);
   const allSchedules = courses.flatMap((c) => c.schedules || []);
   const days = visibleDays(allSchedules, classDaysOnly);
 
@@ -35,6 +43,7 @@ export default function Timetable({
         gridTemplateColumns: `${TIME_COLUMN}px repeat(${days.length}, minmax(112px, 1fr))`,
         gridTemplateRows: `${HEADER_HEIGHT}px repeat(${totalRows}, ${ROW_HEIGHT}px)`,
         width: '100%',
+        ...(fontFamily && { fontFamily }),
         color: colors.text,
         fontVariantNumeric: 'tabular-nums',
       }}
@@ -93,7 +102,7 @@ export default function Timetable({
             style={{
               gridColumn: '1 / -1',
               gridRow: `${i * ROWS_PER_HOUR + 1} / span ${ROWS_PER_HOUR}`,
-              borderBottom: `1px solid ${colors.gridLine}`,
+              borderBottom: style.hourLines ? `1px solid ${colors.gridLine}` : 'none',
             }}
           />
         ))}
@@ -104,7 +113,7 @@ export default function Timetable({
             style={{
               gridColumn: colIdx + 1,
               gridRow: '1 / -1',
-              borderLeft: `1px solid ${colors.gridLine}`,
+              borderLeft: style.dayLines ? `1px solid ${colors.gridLine}` : 'none',
             }}
           />
         ))}
@@ -116,7 +125,7 @@ export default function Timetable({
 
             const { startRow, span } = calculateGridPosition(schedule, firstHour);
             const isActive = showSelection && activeCourseId === course.id;
-            const block = blockColors(course.color, colors);
+            const block = blockLook(course.color, colors, style);
             // Overlapping classes split the day's column between them.
             const { lane, lanes: laneCount } = lanes.get(slotKey(course, schedule)) || { lane: 0, lanes: 1 };
 
@@ -139,9 +148,9 @@ export default function Timetable({
                   flexDirection: 'column',
                   justifyContent: 'flex-start',
                   minWidth: 0,
-                  border: 'none',
-                  borderLeft: `3px solid ${block.edge}`,
-                  borderRadius: 6,
+                  ...blockBorders(block, style.blockEdge ? 3 : 0),
+                  // The timetable is drawn larger than the wallpaper, so corners scale up.
+                  borderRadius: Math.round(style.blockRadius * 1.5),
                   background: block.fill,
                   color: block.text,
                   textAlign: 'left',

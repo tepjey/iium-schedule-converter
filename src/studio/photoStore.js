@@ -122,7 +122,8 @@ const gaussianBlur = (imageData, sigma) => {
 // setting looks the same whatever the photo's resolution.
 const blurSigma = (blur, longSide) => (blur * longSide) / 1000;
 
-// The photo with blur and brightness baked in, as a data URL for the wallpaper.
+// The photo with blur and brightness baked in, as a data URL for the wallpaper, with
+// its size (to line up a frosted copy behind a see-through card).
 // Baking it in (rather than CSS filters) makes the saved image match the preview on
 // every browser. A data URL rather than a blob: URL, because the image saver re-fetches
 // blob: URLs with a cache-busting query, which fails.
@@ -158,7 +159,7 @@ export const renderPhoto = async (blob, { blur = 0, brightness = 0 } = {}) => {
       ctx.fillStyle = brightness < 0 ? `rgba(0,0,0,${-brightness / 100})` : `rgba(255,255,255,${brightness / 100})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-    return await toDataUrl(await toBlob(canvas, 0.92));
+    return { url: await toDataUrl(await toBlob(canvas, 0.92)), width: canvas.width, height: canvas.height };
   } finally {
     URL.revokeObjectURL(url);
   }
