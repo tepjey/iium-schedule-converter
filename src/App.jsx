@@ -12,8 +12,10 @@ import WhatsNew from './components/WhatsNew';
 import { GITHUB_USERNAME } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
+import { applySavedEdits, saveEdits, visibleCourses } from './utils/courseEdits';
 import { recordError } from './utils/diagnostics';
 import { downloadImage, isInAppBrowser, isTouchDevice, renderImage, shareImage } from './utils/exporter';
+import { layoutLanes } from './utils/parser';
 import {
   DEFAULT_THEME,
   LOCK_WIDGETS,
@@ -108,7 +110,8 @@ export default function App() {
   const previewScale = previewAreaWidth ? Math.min(1, (previewAreaWidth - 46) / wallpaperWidth) : 1;
 
   const handleDataParsed = (parsed) => {
-    setCourses(parsed.courses);
+    // Bring back the colors, short names and hidden class times from an earlier upload.
+    setCourses(applySavedEdits(parsed.courses));
     setSemester(parsed.semester);
     setActiveCourseId(null);
 
@@ -124,15 +127,34 @@ export default function App() {
     }
   };
 
-  const handleColorChange = (newColor) => {
-    if (!activeCourseId) return;
-    setCourses((prev) => prev.map((c) => (c.id === activeCourseId ? { ...c, color: newColor } : c)));
+  // Change one course and remember the change on this device.
+  const editCourse = (courseId, change) => {
+    if (!courseId) return;
+    const course = courses.find((c) => c.id === courseId);
+    if (!course) return;
+    const updated = { ...course, ...change(course) };
+    saveEdits([updated]);
+    setCourses((prev) => prev.map((c) => (c.id === courseId ? updated : c)));
   };
 
-  const handleShortNameChange = (shortName) => {
-    if (!activeCourseId) return;
-    setCourses((prev) => prev.map((c) => (c.id === activeCourseId ? { ...c, shortName } : c)));
-  };
+  const handleColorChange = (color) => editCourse(activeCourseId, () => ({ color }));
+
+  const handleShortNameChange = (shortName) => editCourse(activeCourseId, () => ({ shortName }));
+
+  // Class times the student enters themselves, e.g. when the slip has none yet.
+  const handleAddSlots = (courseId, slots) =>
+    editCourse(courseId, (course) => ({
+      schedules: [...course.schedules, ...slots.map((slot) => ({ ...slot, added: true }))],
+    }));
+
+  const handleRemoveSlot = (courseId, slotIndex) =>
+    editCourse(courseId, (course) => ({ schedules: course.schedules.filter((_, i) => i !== slotIndex) }));
+
+  // Show or hide one class time, e.g. a tutorial slot the student doesn't attend.
+  const handleToggleSlot = (courseId, slotIndex) =>
+    editCourse(courseId, (course) => ({
+      schedules: course.schedules.map((s, i) => (i === slotIndex ? { ...s, hidden: !s.hidden } : s)),
+    }));
 
   const handleExport = async () => {
     // Commit the render that hides the selection outline before capturing,
@@ -187,8 +209,11 @@ export default function App() {
     setSavePreview(null);
   };
 
-  const scheduledCourses = courses.filter((c) => !c.isUnscheduled);
-  const unscheduledCourses = courses.filter((c) => c.isUnscheduled);
+  // A course is on the grid once it has a class time, from the slip or added by the student.
+  const scheduledCourses = visibleCourses(courses.filter((c) => c.schedules.length));
+  // Overlapping classes are often alternative tutorial times; point out that they can be hidden.
+  const hasClash = [...layoutLanes(scheduledCourses).values()].some((l) => l.lanes > 1);
+  const unscheduledCourses = courses.filter((c) => !c.schedules.length);
   const totalCredits = courses.reduce((sum, c) => sum + (c.creditHours || 0), 0);
 
   const resetData = () => {
@@ -243,7 +268,7 @@ export default function App() {
                 {semester || 'Your timetable'}
               </h1>
               <p className="mt-1.5 text-[0.9375rem] text-muted">
-                {courses.length} courses, {totalCredits} credit hours. Select a course to change its color.
+                {courses.length} courses, {totalCredits} credit hours. Select a course to change its color or hide class times.
               </p>
             </div>
 
@@ -258,6 +283,30 @@ export default function App() {
                     Report it on GitHub
                   </ReportLink>{' '}
                   so this slip format can be supported.
+                </p>
+              </div>
+            )}
+
+            {unscheduledCourses.length > 0 && (
+              <div role="status" className="mb-6 rounded-2xl border border-brass/40 bg-brass/5 p-4 sm:p-5">
+                <p className="text-[0.9375rem] font-semibold text-ink">
+                  {unscheduledCourses.length === 1
+                    ? '1 course has no class time on your slip'
+                    : `${unscheduledCourses.length} courses have no class time on your slip`}
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  Your department may not have set {unscheduledCourses.length === 1 ? 'it' : 'them'} yet. When you know
+                  the times, select the course under Courses and choose Add class time.
+                </p>
+              </div>
+            )}
+
+            {hasClash && (
+              <div role="status" className="mb-6 rounded-2xl border border-brass/40 bg-brass/5 p-4 sm:p-5">
+                <p className="text-[0.9375rem] font-semibold text-ink">Some classes are at the same time</p>
+                <p className="mt-1 text-sm text-muted">
+                  Your slip may list tutorial times you don’t attend. Select a course under Courses and untick the
+                  class times that aren’t yours to hide them.
                 </p>
               </div>
             )}
@@ -338,6 +387,9 @@ export default function App() {
                   onSelectCourse={setActiveCourseId}
                   onColorChange={handleColorChange}
                   onShortNameChange={handleShortNameChange}
+                  onToggleSlot={handleToggleSlot}
+                  onAddSlots={handleAddSlots}
+                  onRemoveSlot={handleRemoveSlot}
                   onExport={handleExport}
                   isExporting={isExporting}
                   exportError={exportError}

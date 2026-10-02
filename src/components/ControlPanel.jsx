@@ -1,5 +1,7 @@
-import { ChevronDown, Download, Loader2 } from 'lucide-react';
+import { ChevronDown, Download, Loader2, X } from 'lucide-react';
+import { DAY_LABELS, formatRange } from '../utils/parser';
 import { COURSE_PALETTE, WALLPAPER_GROUPS, WALLPAPER_PRESETS, presetLabel, themesForMode } from '../utils/theme';
+import AddClassTime from './AddClassTime';
 import ReportLink from './ReportLink';
 
 const FONT_OPTIONS = [
@@ -10,6 +12,8 @@ const FONT_OPTIONS = [
 
 const selectClass =
   'w-full appearance-none rounded-lg border border-line bg-surface px-3 py-2 pr-9 text-sm text-ink transition-colors hover:border-teal/40';
+
+const hiddenCount = (course) => course.schedules.filter((s) => s.hidden).length;
 
 function Section({ title, children }) {
   return (
@@ -112,6 +116,9 @@ export default function ControlPanel({
   onSelectCourse,
   onColorChange,
   onShortNameChange,
+  onToggleSlot,
+  onAddSlots,
+  onRemoveSlot,
   onExport,
   isExporting,
   exportError,
@@ -285,7 +292,8 @@ export default function ControlPanel({
                     </span>
                     <span className="block truncate text-[0.8125rem] text-muted">
                       {course.title}
-                      {course.isUnscheduled ? ' (no class time)' : ''}
+                      {course.schedules.length ? '' : ' (no class time)'}
+                      {hiddenCount(course) ? ` · ${hiddenCount(course)} hidden` : ''}
                     </span>
                   </span>
                 </button>
@@ -335,6 +343,63 @@ export default function ControlPanel({
                       />
                     </label>
                   </div>
+                )}
+
+                {selected && (
+                  <fieldset className="px-2 pb-3 pl-8">
+                    <legend className="pb-1.5 text-[0.8125rem] text-muted">
+                      {course.schedules.length
+                        ? 'Class times · untick ones that aren’t yours'
+                        : 'No class time on your slip yet. Add it when you know it.'}
+                    </legend>
+                    {course.slipTimesArrived && course.schedules.some((s) => s.added) && (
+                      <p className="mb-2 rounded-md border border-brass/40 bg-brass/5 px-2.5 py-1.5 text-[0.8125rem] text-ink">
+                        Your slip now lists times for this course. Remove the ones you added if they’re duplicates.
+                      </p>
+                    )}
+                    {course.schedules.length > 0 && (
+                      <ul className="space-y-1">
+                        {course.schedules.map((slot, i) => (
+                          <li key={`${slot.day}-${slot.start}-${slot.end}`} className="flex items-start gap-1">
+                            <label className="flex min-w-0 flex-1 cursor-pointer items-baseline gap-2.5 text-[0.8125rem] text-ink">
+                              <input
+                                type="checkbox"
+                                checked={!slot.hidden}
+                                onChange={() => onToggleSlot(course.id, i)}
+                                className="relative top-0.5 h-4 w-4 shrink-0 accent-teal"
+                              />
+                              <span className={`min-w-0 ${slot.hidden ? 'text-muted line-through' : ''}`}>
+                                <span className="font-medium">{DAY_LABELS[slot.day]}</span>{' '}
+                                <span className="tabular-nums">{formatRange(slot.start, slot.end, timeFormat)}</span>
+                                {slot.added && (
+                                  <span className="mx-1.5 rounded bg-teal-wash px-1 py-px text-[0.6875rem] font-medium text-teal">
+                                    added
+                                  </span>
+                                )}
+                                {slot.venue && <span className="text-muted"> · {slot.venue}</span>}
+                              </span>
+                            </label>
+                            {slot.added && (
+                              <button
+                                type="button"
+                                onClick={() => onRemoveSlot(course.id, i)}
+                                aria-label={`Remove ${DAY_LABELS[slot.day]} ${formatRange(slot.start, slot.end, timeFormat)}`}
+                                className="-mt-0.5 shrink-0 rounded p-1 text-muted transition-colors hover:bg-teal-wash hover:text-danger"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <AddClassTime
+                      key={course.id}
+                      existing={course.schedules}
+                      startOpen={!course.schedules.length}
+                      onAdd={(slots) => onAddSlots(course.id, slots)}
+                    />
+                  </fieldset>
                 )}
               </li>
             );
