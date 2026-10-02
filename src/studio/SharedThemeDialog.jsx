@@ -9,14 +9,17 @@ export default function SharedThemeDialog({ theme, onAdd, onClose }) {
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
+    // Focus the dialog itself rather than its first button, which would show a focus ring.
+    dialog?.focus();
   }, []);
 
   return (
     <dialog
       ref={dialogRef}
+      tabIndex={-1}
       onClose={onClose}
       aria-labelledby="shared-theme-title"
-      className="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-ink/60"
+      className="m-auto outline-none w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-ink/60"
     >
       <div className="space-y-4 p-5">
         <div

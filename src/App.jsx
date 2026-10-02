@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
+import { Sparkles } from 'lucide-react';
 import ControlPanel, { ExportButton } from './components/ControlPanel';
 import Faq from './components/Faq';
 import Khatam from './components/Khatam';
@@ -271,9 +272,12 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowWhatsNew(true)}
+              aria-label="What’s new"
               className="rounded-lg px-2.5 py-2 text-sm font-medium whitespace-nowrap text-muted transition-colors hover:bg-teal-wash hover:text-ink sm:px-3"
             >
-              What’s new
+              {/* An icon on phones, so the header still fits with the Beta badge. */}
+              <Sparkles className="h-[1.125rem] w-[1.125rem] sm:hidden" />
+              <span className="hidden sm:inline">What’s new</span>
             </button>
             {hasData && (
               <button

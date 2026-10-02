@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, ImagePlus, Link2, Loader2, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, Image, ImagePlus, LayoutGrid, Link2, Loader2, Palette, PanelTop, Trash2, Type, X } from 'lucide-react';
 import { THEMES } from '../utils/theme';
 import { preparePhoto } from './photoStore';
 import {
@@ -101,22 +101,24 @@ function Toggle({ label, checked, onChange, hint }) {
   );
 }
 
-// Section tabs that scroll sideways when they don't fit (five tabs on a phone).
+// Section tabs: five equal columns with an icon over a short label, so all of them fit
+// on the narrowest phone without scrolling.
 function Tabs({ tabs, value, onChange }) {
   return (
-    <div role="tablist" aria-label="Studio sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {tabs.map((t) => (
+    <div role="tablist" aria-label="Studio sections" className="grid grid-cols-5 gap-1 rounded-xl bg-limestone p-1">
+      {tabs.map(({ id, label, Icon }) => (
         <button
-          key={t.id}
+          key={id}
           type="button"
           role="tab"
-          aria-selected={value === t.id}
-          onClick={() => onChange(t.id)}
-          className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
-            value === t.id ? 'bg-teal font-semibold text-limestone' : 'bg-limestone text-muted hover:text-ink'
+          aria-selected={value === id}
+          onClick={() => onChange(id)}
+          className={`flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-0 py-1.5 text-[0.6875rem] leading-tight tracking-[-0.01em] transition-colors ${
+            value === id ? 'bg-surface font-semibold text-teal shadow-[0_1px_2px_rgba(13,47,46,0.12)]' : 'text-muted hover:text-ink'
           }`}
         >
-          {t.label}
+          <Icon className="h-4 w-4" />
+          <span className="max-w-full truncate">{label}</span>
         </button>
       ))}
     </div>
@@ -179,6 +181,8 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
+    // Focus the studio itself, not the close button (which would show a focus ring).
+    dialog?.focus();
     // The page behind the full-screen studio shouldn't scroll along with it.
     const { overflow } = document.documentElement.style;
     document.documentElement.style.overflow = 'hidden';
@@ -277,7 +281,8 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
       ref={dialogRef}
       onClose={onClose}
       aria-labelledby="studio-title"
-      className="m-0 h-dvh max-h-none w-screen max-w-none bg-limestone p-0 text-ink backdrop:bg-ink/60 lg:m-auto lg:h-[min(52rem,calc(100dvh-3rem))] lg:w-[min(64rem,calc(100vw-3rem))] lg:rounded-2xl lg:border lg:border-line"
+      tabIndex={-1}
+      className="m-0 h-dvh max-h-none w-full max-w-none outline-none bg-limestone p-0 text-ink backdrop:bg-ink/60 lg:m-auto lg:h-[min(52rem,calc(100dvh-3rem))] lg:w-[min(64rem,calc(100vw-3rem))] lg:rounded-2xl lg:border lg:border-line"
     >
       <div className="flex h-full flex-col">
         <header className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2.5 sm:px-5">
@@ -310,12 +315,13 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
           </button>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-rows-[minmax(14rem,42%)_1fr] lg:grid-cols-[minmax(0,1fr)_24rem] lg:grid-rows-1">
+        {/* minmax(0, 1fr): the column never grows wider than the screen on a phone. */}
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(14rem,42%)_1fr] lg:grid-cols-[minmax(0,1fr)_24rem] lg:grid-rows-1">
           <div ref={previewBoxRef} className="relative m-3 flex min-h-0 items-center justify-center sm:m-5">
             {scale > 0 && (
               <div
                 style={{ width: width * scale + 8, height: height * scale + 8 }}
-                className="overflow-hidden rounded-[1.75rem] border-4 border-ink shadow-[0_18px_40px_-20px_rgba(13,47,46,0.5)]"
+                className="overflow-hidden rounded-[1.75rem] border-4 border-ink bg-ink shadow-[0_18px_40px_-20px_rgba(13,47,46,0.5)]"
               >
                 <div style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                   {renderPreview(resolved)}
@@ -324,17 +330,17 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
             )}
           </div>
 
-          <div className="flex min-h-0 flex-col border-t border-line bg-surface lg:border-t-0 lg:border-l">
+          <div className="flex min-h-0 min-w-0 flex-col border-t border-line bg-surface lg:border-t-0 lg:border-l">
             <div className="px-4 pt-3 sm:px-5">
               <Tabs
                 value={tab}
                 onChange={setTab}
                 tabs={[
-                  { id: 'colors', label: 'Colors' },
-                  { id: 'background', label: 'Background' },
-                  { id: 'card', label: 'Card' },
-                  { id: 'blocks', label: 'Blocks' },
-                  { id: 'text', label: 'Text' },
+                  { id: 'colors', label: 'Colors', Icon: Palette },
+                  { id: 'background', label: 'Background', Icon: Image },
+                  { id: 'card', label: 'Card', Icon: PanelTop },
+                  { id: 'blocks', label: 'Blocks', Icon: LayoutGrid },
+                  { id: 'text', label: 'Text', Icon: Type },
                 ]}
               />
             </div>

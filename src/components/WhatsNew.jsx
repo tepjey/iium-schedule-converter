@@ -8,6 +8,8 @@ export default function WhatsNew({ onClose }) {
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
+    // Focus the dialog itself rather than its first button, which would show a focus ring.
+    dialog?.focus();
   }, []);
 
   const handleClose = () => {
@@ -18,9 +20,10 @@ export default function WhatsNew({ onClose }) {
   return (
     <dialog
       ref={dialogRef}
+      tabIndex={-1}
       onClose={handleClose}
       aria-labelledby="whats-new-title"
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-ink/60"
+      className="m-auto outline-none w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-ink/60"
     >
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-surface px-5 py-3">
         <h2 id="whats-new-title" className="text-base font-semibold">
