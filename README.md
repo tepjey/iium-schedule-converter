@@ -9,6 +9,7 @@
 [![Deploy](https://github.com/tepjey/iium-schedule-converter/actions/workflows/deploy.yml/badge.svg)](https://github.com/tepjey/iium-schedule-converter/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-0f6b66.svg)](LICENSE)
 [![Made with React](https://img.shields.io/badge/React-19-0f6b66?logo=react&logoColor=white)](https://react.dev)
+[![Buy me a coffee](https://img.shields.io/badge/Buy_me_a_coffee-c9a46a?logo=buymeacoffee&logoColor=white)](https://buymeacoffee.com/athifuzair)
 
 <img src="public/og-image.png" alt="IIUM Schedule Converter: a confirmation slip turned into a weekly timetable on a phone lock screen" width="720" />
 
@@ -28,6 +29,7 @@ IIUM Schedule Converter (also called IIUM Timetable) reads the Course Registrati
 - [Running it locally](#running-it-locally)
 - [How the slip is read](#how-the-slip-is-read)
 - [Contributing](#contributing)
+- [Supporting the project](#supporting-the-project)
 - [License](#license)
 
 ## Features
@@ -96,6 +98,10 @@ The parser lives in [`src/utils/parser.js`](src/utils/parser.js).
 ## Contributing
 
 Reports of slips that don't read correctly are the most helpful contribution, and no code is needed. To work on the code, read the [contributing guide](.github/CONTRIBUTING.md) first. Everyone taking part is expected to follow the [code of conduct](.github/CODE_OF_CONDUCT.md).
+
+## Supporting the project
+
+IIUM Schedule Converter is free for every IIUM student, and it always will be. If it saved you time and you'd like to say thanks, you can [buy me a coffee](https://buymeacoffee.com/athifuzair). It's completely optional; telling a friend about the site or reporting a slip that didn't read correctly helps just as much.
 
 ## Built with
 

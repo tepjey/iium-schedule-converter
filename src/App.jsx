@@ -9,7 +9,7 @@ import SavePreview from './components/SavePreview';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
 import WhatsNew from './components/WhatsNew';
-import { GITHUB_USERNAME } from './config';
+import { GITHUB_USERNAME, SUPPORT_URL } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
 import { applySavedEdits, saveEdits, visibleCourses } from './utils/courseEdits';
@@ -446,6 +446,20 @@ export default function App() {
               >
                 @{GITHUB_USERNAME}
               </a>
+            </p>
+          )}
+          {SUPPORT_URL && (
+            <p>
+              Free for every IIUM student, always. If it helped you, you can{' '}
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-teal underline-offset-4 hover:underline"
+              >
+                buy me a coffee
+              </a>{' '}
+              ☕
             </p>
           )}
           <p>
