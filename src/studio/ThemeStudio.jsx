@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Image, ImagePlus, LayoutGrid, Link2, Loader2, Palette, PanelTop, Trash2, Type, X } from 'lucide-react';
-import { THEMES } from '../utils/theme';
+import {
+  Check, ChevronDown, Copy, Image, ImagePlus, LayoutGrid, Link2, Loader2, Palette, PanelTop, Smile, StickyNote, Trash2, Type, X,
+} from 'lucide-react';
+import { THEMES, lockScreenInsets } from '../utils/theme';
+import { StickerArt } from './Decor';
+import DecorEditor from './DecorEditor';
+import { MAX_DECOR, NOTE_COLORS, NOTE_MAX_LENGTH, STICKERS, STICKER_COLORS, newDecorId, newNote, newSticker } from './decorModel';
 import { preparePhoto } from './photoStore';
 import {
   COLOR_KEYS,
@@ -101,11 +106,11 @@ function Toggle({ label, checked, onChange, hint }) {
   );
 }
 
-// Section tabs: five equal columns with an icon over a short label, so all of them fit
+// Section tabs: six equal columns with an icon over a short label, so all of them fit
 // on the narrowest phone without scrolling.
 function Tabs({ tabs, value, onChange }) {
   return (
-    <div role="tablist" aria-label="Studio sections" className="grid grid-cols-5 gap-1 rounded-xl bg-limestone p-1">
+    <div role="tablist" aria-label="Studio sections" className="grid grid-cols-6 gap-1 rounded-xl bg-limestone p-1">
       {tabs.map(({ id, label, Icon }) => (
         <button
           key={id}
@@ -208,6 +213,39 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
       return t;
     });
   const { style } = draft;
+
+  // Stickers and notes: the one being edited, and changes to it.
+  const [selectedDecor, setSelectedDecor] = useState(null);
+  const decor = draft.decor;
+  const selected = decor.find((d) => d.id === selectedDecor) || null;
+  const changeDecor = (id, patch) =>
+    update((t) => {
+      t.decor = t.decor.map((d) => (d.id === id ? { ...d, ...patch } : d));
+      return t;
+    });
+  const addDecor = (item) => {
+    if (!item || decor.length >= MAX_DECOR) return;
+    update((t) => {
+      t.decor.push(item);
+      return t;
+    });
+    setSelectedDecor(item.id);
+  };
+  const removeDecor = (id) => {
+    update((t) => {
+      t.decor = t.decor.filter((d) => d.id !== id);
+      return t;
+    });
+    setSelectedDecor(null);
+  };
+  // Where the lock screen covers the wallpaper (clock at the top, buttons at the bottom).
+  const lockArea = lockScreenInsets(size, 'none');
+  const lockWarning =
+    selected && selected.y < lockArea.top
+      ? 'This sits where the lock screen clock is, so it may be hidden.'
+      : selected && selected.y > 1 - lockArea.bottom
+        ? 'This sits where the lock screen buttons are, so it may be covered.'
+        : '';
 
   // Font buttons show each font, so load them all when the Text tab opens.
   useEffect(() => {
@@ -323,8 +361,20 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                 style={{ width: width * scale + 8, height: height * scale + 8 }}
                 className="overflow-hidden rounded-[1.75rem] border-4 border-ink bg-ink shadow-[0_18px_40px_-20px_rgba(13,47,46,0.5)]"
               >
-                <div style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                <div style={{ position: 'relative', width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                   {renderPreview(resolved)}
+                  {tab === 'decor' && (
+                    <DecorEditor
+                      items={decor}
+                      theme={resolved}
+                      width={width}
+                      height={height}
+                      scale={scale}
+                      selectedId={selectedDecor}
+                      onSelect={setSelectedDecor}
+                      onChange={changeDecor}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -337,10 +387,11 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                 onChange={setTab}
                 tabs={[
                   { id: 'colors', label: 'Colors', Icon: Palette },
-                  { id: 'background', label: 'Background', Icon: Image },
+                  { id: 'background', label: 'Backdrop', Icon: Image },
                   { id: 'card', label: 'Card', Icon: PanelTop },
                   { id: 'blocks', label: 'Blocks', Icon: LayoutGrid },
                   { id: 'text', label: 'Text', Icon: Type },
+                  { id: 'decor', label: 'Stickers', Icon: Smile },
                 ]}
               />
             </div>
@@ -770,6 +821,145 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                       />
                     </Field>
                   </Advanced>
+                </>
+              )}
+
+              {tab === 'decor' && (
+                <>
+                  <p className="text-[0.8125rem] text-muted">
+                    Drag on the preview to move. Drag the round handle to resize and turn.
+                  </p>
+
+                  {selected && (
+                    <div className="space-y-3 rounded-lg border border-teal/40 bg-teal-wash/30 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[0.8125rem] font-semibold text-ink">
+                          {selected.kind === 'note' ? 'Sticky note' : 'Sticker'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDecor(null)}
+                          className="rounded-md px-2 py-1 text-[0.8125rem] font-medium text-teal hover:bg-teal-wash"
+                        >
+                          Done
+                        </button>
+                      </div>
+
+                      {selected.kind === 'note' && (
+                        <label className="block text-[0.8125rem] text-muted">
+                          Text
+                          <textarea
+                            value={selected.text}
+                            onChange={(e) => changeDecor(selected.id, { text: e.target.value.slice(0, NOTE_MAX_LENGTH) })}
+                            maxLength={NOTE_MAX_LENGTH}
+                            rows={2}
+                            placeholder="e.g. Final exam 14 Dec"
+                            className="mt-1 block w-full resize-none rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink"
+                          />
+                          <span className="mt-0.5 block text-right text-[0.6875rem]">
+                            {selected.text.length}/{NOTE_MAX_LENGTH}
+                          </span>
+                        </label>
+                      )}
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {(selected.kind === 'note' ? NOTE_COLORS : STICKER_COLORS).map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => changeDecor(selected.id, { color: c })}
+                            aria-label={c === 'theme' ? 'Theme color' : `Color ${c}`}
+                            className={`h-6 w-6 rounded-full border border-line ${
+                              selected.color === c ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface' : ''
+                            }`}
+                            style={{ background: c === 'theme' ? resolved.accent : c }}
+                          >
+                            {c === 'theme' && <span className="sr-only">Theme</span>}
+                          </button>
+                        ))}
+                      </div>
+
+                      <Slider
+                        label="Size"
+                        value={Math.round(selected.size * 100)}
+                        min={selected.kind === 'note' ? 20 : 5}
+                        max={selected.kind === 'note' ? 80 : 50}
+                        format={(v) => `${v}%`}
+                        onChange={(v) => changeDecor(selected.id, { size: v / 100 })}
+                      />
+                      <Slider
+                        label="Turn"
+                        value={selected.rotate}
+                        min={-180}
+                        max={180}
+                        format={(v) => `${v}°`}
+                        onChange={(v) => changeDecor(selected.id, { rotate: v })}
+                      />
+                      <Toggle
+                        label="Behind the timetable"
+                        checked={selected.layer === 'back'}
+                        onChange={(v) => changeDecor(selected.id, { layer: v ? 'back' : 'front' })}
+                      />
+                      {lockWarning && <p className="text-[0.75rem] text-brass">{lockWarning}</p>}
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={decor.length >= MAX_DECOR}
+                          onClick={() =>
+                            addDecor({
+                              ...selected,
+                              id: newDecorId(),
+                              x: Math.min(1, selected.x + 0.05),
+                              y: Math.min(1, selected.y + 0.04),
+                            })
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium text-teal hover:bg-teal-wash disabled:opacity-50"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          Duplicate
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeDecor(selected.id)}
+                          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium text-muted hover:bg-danger/5 hover:text-danger"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => addDecor(newNote())}
+                    disabled={decor.length >= MAX_DECOR}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-teal/50 bg-teal-wash/40 px-4 py-2.5 text-sm font-semibold text-teal transition-colors hover:bg-teal-wash disabled:opacity-50"
+                  >
+                    <StickyNote className="h-4 w-4" />
+                    Add a sticky note
+                  </button>
+
+                  <Field label="Add a sticker">
+                    <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8">
+                      {STICKERS.map((icon) => (
+                        <button
+                          key={icon}
+                          type="button"
+                          onClick={() => addDecor(newSticker(icon))}
+                          disabled={decor.length >= MAX_DECOR}
+                          aria-label={`Add ${icon} sticker`}
+                          className="aspect-square rounded-lg border border-line bg-limestone p-1.5 transition-colors hover:border-teal/40 disabled:opacity-50"
+                        >
+                          <StickerArt icon={icon} color={resolved.accent} />
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                  {decor.length >= MAX_DECOR && (
+                    <p className="text-[0.75rem] text-muted">That’s the most a wallpaper can hold ({MAX_DECOR}).</p>
+                  )}
                 </>
               )}
 

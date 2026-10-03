@@ -1,6 +1,7 @@
 import { forwardRef, useEffect } from 'react';
 import { DAY_LABELS, courseLabels, formatHour, formatTime, layoutLanes, slotKey, visibleDays } from '../utils/parser';
 import { DEFAULT_STYLE, FONTS, SHADOWS, TEXT_SCALE, blockBorders, blockLook, cardFill, loadFont } from '../studio/styleModel';
+import { DecorLayer } from '../studio/Decor';
 import { getTheme, lockScreenInsets } from '../utils/theme';
 import Khatam from './Khatam';
 
@@ -34,6 +35,7 @@ const WallpaperView = forwardRef(function WallpaperView(
   // How the card, blocks, text and grid are drawn. Built-in themes have no style and
   // use the defaults, which are the original look.
   const style = colors.style || DEFAULT_STYLE;
+  const decor = colors.decor || [];
   const scale = TEXT_SCALE[style.textSize] || 1;
   const TIME_COLUMN = Math.round(BASE.timeColumn * scale);
   const HEADER_HEIGHT = Math.round(BASE.header * scale);
@@ -109,6 +111,9 @@ const WallpaperView = forwardRef(function WallpaperView(
         ...(fontFamily && { fontFamily }),
       }}
     >
+      {/* Stickers and notes (2.0): those set behind the timetable are drawn first. */}
+      {decor.length > 0 && <DecorLayer items={decor} layer="back" theme={colors} width={width} height={height} />}
+
       <div
         style={{
           position: 'absolute',
@@ -337,6 +342,8 @@ const WallpaperView = forwardRef(function WallpaperView(
           </div>
         </div>
       )}
+
+      {decor.length > 0 && <DecorLayer items={decor} layer="front" theme={colors} width={width} height={height} />}
     </div>
   );
 });

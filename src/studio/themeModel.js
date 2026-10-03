@@ -1,4 +1,5 @@
 import { THEMES, mix } from '../utils/theme';
+import { sanitizeDecor } from './decorModel';
 import { sanitizeStyle } from './styleModel';
 
 // A custom theme (2.0 Theme Studio). It resolves to the same set of colors as a built-in
@@ -143,6 +144,8 @@ export const sanitizeTheme = (raw) => {
     },
     // Card, blocks, text and grid (see styleModel.js).
     style: sanitizeStyle(t.style),
+    // Stickers and sticky notes on the wallpaper (see decorModel.js).
+    decor: sanitizeDecor(t.decor),
   };
 };
 
@@ -171,6 +174,7 @@ export const resolveTheme = (theme, photo = null) => {
     wallpaperBackground,
     activeRing: colors.text,
     style: theme.style,
+    decor: theme.decor,
     // The photo's size and frosted copy, for a see-through card to line up with.
     photo: usePhoto ? { width: photo.width, height: photo.height, frostUrl: photo.frostUrl } : null,
   };
@@ -178,7 +182,8 @@ export const resolveTheme = (theme, photo = null) => {
 
 // --- Share links ---------------------------------------------------------------------
 // The theme travels in the link itself (#theme=...), so no server is needed. A photo is
-// too big for a link, so a photo theme is shared with its solid color instead.
+// too big for a link, so a photo theme is shared with its solid color instead, and
+// sticky notes (personal text) are left out.
 
 const toBase64Url = (text) =>
   btoa(String.fromCharCode(...new TextEncoder().encode(text)))
@@ -195,6 +200,8 @@ export const shareUrl = (theme) => {
   // The id stays behind: whoever opens the link gets their own copy.
   const shared = { ...theme, id: undefined };
   if (shared.background.type === 'photo') shared.background = { ...shared.background, type: 'solid' };
+  // Sticky notes hold personal text, so they stay behind; stickers travel.
+  shared.decor = shared.decor.filter((item) => item.kind !== 'note');
   const url = new URL(window.location.href);
   url.hash = `theme=${toBase64Url(JSON.stringify({ v: 1, ...shared }))}`;
   return url.toString();
