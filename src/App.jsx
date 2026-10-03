@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import ControlPanel, { ExportButton } from './components/ControlPanel';
 import Faq from './components/Faq';
@@ -6,12 +6,14 @@ import Khatam from './components/Khatam';
 import PDFUploader from './components/PDFUploader';
 import ReportLink from './components/ReportLink';
 import SavePreview from './components/SavePreview';
+import SupportNudge from './components/SupportNudge';
 import Timetable from './components/Timetable';
 import WallpaperView from './components/WallpaperView';
 import WhatsNew from './components/WhatsNew';
 import { GITHUB_USERNAME, SUPPORT_URL } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
+import { shouldNudge } from './utils/supportNudge';
 import { applySavedEdits, saveEdits, visibleCourses } from './utils/courseEdits';
 import { recordError } from './utils/diagnostics';
 import { downloadImage, isInAppBrowser, isTouchDevice, renderImage, shareImage } from './utils/exporter';
@@ -86,6 +88,8 @@ export default function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   // The rendered image and its object URL, when it's shown in the save preview.
+  // The "buy me a coffee" note shown after a save (see utils/supportNudge.js).
+  const [showNudge, setShowNudge] = useState(false);
   const [savePreview, setSavePreview] = useState(null);
   const [showWhatsNew, setShowWhatsNew] = useState(shouldAnnounce);
   const timetableRef = useRef(null);
@@ -194,15 +198,19 @@ export default function App() {
     const inApp = isInAppBrowser();
     if (!isTouchDevice() && !inApp) {
       downloadImage(file);
+      if (SUPPORT_URL && shouldNudge()) setShowNudge(true);
       return;
     }
     if (!inApp) {
       const result = await shareImage(file);
+      if (result === 'shared' && SUPPORT_URL && shouldNudge()) setShowNudge(true);
       if (result !== 'unavailable') return;
     }
     trackEvent(inApp ? 'save-preview: in-app browser' : 'save-preview: share unavailable', 'Save preview shown');
     setSavePreview({ file, url: URL.createObjectURL(file), inApp });
   };
+
+  const closeNudge = useCallback(() => setShowNudge(false), []);
 
   const closeSavePreview = () => {
     URL.revokeObjectURL(savePreview.url);
@@ -473,6 +481,8 @@ export default function App() {
       </footer>
 
       {showWhatsNew && <WhatsNew onClose={() => setShowWhatsNew(false)} />}
+
+      {showNudge && <SupportNudge layout={layout} onClose={closeNudge} />}
 
       {savePreview && (
         <SavePreview
