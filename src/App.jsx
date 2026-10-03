@@ -15,6 +15,7 @@ import SharedThemeDialog from './studio/SharedThemeDialog';
 import ThemeStudio from './studio/ThemeStudio';
 import { resolveTheme, themeFromHash, themeFromPreset } from './studio/themeModel';
 import { useCustomThemes } from './studio/useCustomThemes';
+import { checkoutSession } from './pro/checkoutReturn';
 import ProDialog from './pro/ProDialog';
 import { proFeaturesOf, withoutPro } from './pro/proModel';
 import { usePro } from './pro/usePro';
@@ -125,13 +126,10 @@ export default function App() {
     (f) => layout === 'wallpaper' || f === 'Extra font' || f === 'Block style'
   );
   // Open the Pro dialog as { view, features?, session? }. Opens by itself when Stripe
-  // Checkout sends the buyer back (?pro=paid&session=...).
-  const [proDialog, setProDialog] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('pro') === 'paid' && params.get('session')
-      ? { view: 'claim', session: params.get('session') }
-      : null;
-  });
+  // Checkout sends the buyer back (see pro/checkoutReturn.js).
+  const [proDialog, setProDialog] = useState(() =>
+    checkoutSession ? { view: 'claim', session: checkoutSession } : null
+  );
   // A custom photo background still being prepared would be missing from a saved wallpaper.
   const photoPreparing = layout === 'wallpaper' && customThemes.activePhotoPending;
   const colors = getTheme(themeToDraw);
@@ -143,12 +141,6 @@ export default function App() {
   const openNewTheme = customThemes.canAddMore
     ? () => setStudio({ theme: themeFromPreset(theme, `My theme ${customThemes.themes.length + 1}`), isNew: true })
     : null;
-  useEffect(() => {
-    // Clear Checkout's return address (?pro=...) so a reload doesn't claim again.
-    if (new URLSearchParams(window.location.search).has('pro')) {
-      window.history.replaceState(null, '', window.location.pathname);
-    }
-  }, []);
   useEffect(() => {
     // Clear the link's theme code from the address bar so a reload doesn't ask again.
     const clearHash = () => {

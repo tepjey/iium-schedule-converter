@@ -4,5 +4,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "slipsnap",
   "compatibility_date": "2026-10-01",
-  "pages_build_output_dir": "./dist"
+  "pages_build_output_dir": "./dist",
+  // Counts failed Pro restore attempts, so receipt numbers can't be guessed
+  // (functions/api/restore.js). Shared by the live site and the beta.
+  "kv_namespaces": [{ "binding": "RESTORE_ATTEMPTS", "id": "9841340206f14a24a18f5998c9fca09f" }]
 }
