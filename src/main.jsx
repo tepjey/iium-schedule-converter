@@ -1,3 +1,5 @@
+// Must stay first: imports settings carried over from the old address before the app reads them.
+import './utils/migrate'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

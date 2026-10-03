@@ -172,13 +172,13 @@ export default function App() {
       file =
         layout === 'wallpaper'
           ? await renderImage(wallpaperRef, {
-              filename: `IIUM_Wallpaper_${wallpaperSize.width}x${wallpaperSize.height}.png`,
+              filename: `SlipSnap_Wallpaper_${wallpaperSize.width}x${wallpaperSize.height}.png`,
               pixelRatio: wallpaperSize.pixelRatio,
               outputWidth: wallpaperSize.width,
               outputHeight: wallpaperSize.height,
             })
           : await renderImage(timetableRef, {
-              filename: 'IIUM_Timetable.png',
+              filename: 'SlipSnap_Timetable.png',
               pixelRatio: 3,
               backgroundColor: colors.background,
             });
@@ -239,7 +239,7 @@ export default function App() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
           <div className="flex items-center gap-2.5">
             <Khatam size={22} strokeWidth={7} color="var(--color-teal)" />
-            <span className="font-kufi text-xl font-medium tracking-tight whitespace-nowrap text-ink">IIUM Timetable</span>
+            <span className="font-kufi text-xl font-medium tracking-tight whitespace-nowrap text-ink">SlipSnap</span>
           </div>
           <div className="flex items-center gap-1">
             <button

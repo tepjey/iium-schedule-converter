@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://tepjey.github.io/iium-schedule-converter/sitemap.xml
+Sitemap: https://slipsnap.pages.dev/sitemap.xml

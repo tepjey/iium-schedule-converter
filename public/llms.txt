@@ -1,4 +1,4 @@
-# IIUM Schedule Converter (IIUM Timetable)
+# SlipSnap (formerly IIUM Schedule Converter)
 
 > A free web tool that turns an IIUM (International Islamic University Malaysia) course registration confirmation slip into a weekly timetable and a phone or tablet wallpaper.
 
@@ -9,6 +9,6 @@
 
 ## Links
 
-- [Website](https://tepjey.github.io/iium-schedule-converter/)
+- [Website](https://slipsnap.pages.dev/)
 - [Source code](https://github.com/tepjey/iium-schedule-converter)
 - [Report a problem](https://github.com/tepjey/iium-schedule-converter/issues/new?template=report-a-problem.yml)

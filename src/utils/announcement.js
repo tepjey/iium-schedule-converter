@@ -1,8 +1,12 @@
 // Bump the id whenever the list changes; each visitor sees a given announcement once.
 export const ANNOUNCEMENT = {
-  id: '2026-10-03',
-  title: 'New in IIUM Timetable',
+  id: '2026-10-05',
+  title: 'New in SlipSnap',
   items: [
+    {
+      title: 'IIUM Timetable is now SlipSnap',
+      body: 'Same free tool, new name and a new home at slipsnap.pages.dev. Your colors and settings came with you, and old links still work.',
+    },
     {
       title: 'Choose your tutorial times',
       body: 'If your slip lists tutorial times you don’t attend, tap the course under Courses and untick them. They’re left off your timetable and wallpaper.',

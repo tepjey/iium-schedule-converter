@@ -97,7 +97,7 @@ export default function PDFUploader({ onDataParsed }) {
     // Desktop: intro and steps on the left, upload box spanning both rows on the right.
     <section className="grid gap-8 py-6 lg:grid-cols-[1.05fr_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-8 lg:py-14">
       <div className="order-1 max-w-xl lg:order-none lg:self-end">
-        <p className="mb-3 text-sm font-semibold tracking-wide text-teal uppercase">IIUM schedule converter</p>
+        <p className="mb-3 text-sm font-semibold tracking-wide text-teal uppercase">SlipSnap · for IIUM students</p>
         <h1 className="font-kufi text-[2.25rem] leading-[1.08] font-semibold text-ink sm:text-[3.25rem]">
           Your IIUM confirmation slip, as a weekly timetable.
         </h1>

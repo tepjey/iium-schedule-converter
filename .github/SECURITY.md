@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-Only the live site at [tepjey.github.io/iium-schedule-converter](https://tepjey.github.io/iium-schedule-converter/), built from the `main` branch, is supported. Fixes are deployed there, not backported.
+Only the live site at [slipsnap.pages.dev](https://slipsnap.pages.dev/), built from the `main` branch, is supported. Fixes are deployed there, not backported.
 
 ## What's in scope
 
-IIUM Schedule Converter runs entirely in the browser. There is no server, database or account system, and a student's confirmation slip is never uploaded. The most important security property is that **slip contents (name, matric number, IC number, courses) never leave the student's device**.
+SlipSnap runs entirely in the browser. There is no server, database or account system, and a student's confirmation slip is never uploaded. The most important security property is that **slip contents (name, matric number, IC number, courses) never leave the student's device**.
 
 Reports we especially want to hear about:
 
