@@ -2,7 +2,12 @@
 // address, so the old site's redirect hands them over in the link's #migrate=... part
 // (never sent to any server). This runs before the app reads any settings, so it must be
 // the first import in main.jsx. Only keys that aren't set here yet are filled in.
+//
+// The handover is only accepted when the visitor came straight from the old site, so a
+// link made elsewhere can't plant settings. A browser that hides where the visitor came
+// from just starts with the default settings.
 const PREFIX = '#migrate=';
+const OLD_SITE = 'https://tepjey.github.io/';
 
 const fromBase64Url = (code) => {
   const binary = atob(code.replace(/-/g, '+').replace(/_/g, '/'));
@@ -11,7 +16,9 @@ const fromBase64Url = (code) => {
 
 try {
   if (window.location.hash.startsWith(PREFIX)) {
-    const data = JSON.parse(fromBase64Url(window.location.hash.slice(PREFIX.length)));
+    const data = document.referrer.startsWith(OLD_SITE)
+      ? JSON.parse(fromBase64Url(window.location.hash.slice(PREFIX.length)))
+      : null;
     if (data && typeof data === 'object') {
       for (const [key, value] of Object.entries(data)) {
         if (key.startsWith('iium.') && typeof value === 'string' && localStorage.getItem(key) === null) {
