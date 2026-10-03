@@ -15,6 +15,9 @@ import SharedThemeDialog from './studio/SharedThemeDialog';
 import ThemeStudio from './studio/ThemeStudio';
 import { resolveTheme, themeFromHash, themeFromPreset } from './studio/themeModel';
 import { useCustomThemes } from './studio/useCustomThemes';
+import ProDialog from './pro/ProDialog';
+import { proFeaturesOf, withoutPro } from './pro/proModel';
+import { usePro } from './pro/usePro';
 import { GITHUB_USERNAME, IS_BETA, SITE_URL, SUPPORT_URL } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
@@ -108,7 +111,27 @@ export default function App() {
   // 2.0 Theme Studio: a custom theme, when one is in use, replaces the built-in one.
   const customThemes = useCustomThemes();
   const activeCustom = customThemes.active;
-  const themeToDraw = activeCustom ? resolveTheme(activeCustom, customThemes.activePhoto) : theme;
+  // SlipSnap Pro: the design can use Pro features freely; saving an image of one needs Pro.
+  const pro = usePro();
+  // True while saving "without Pro features": the design is drawn with free stand-ins.
+  const [freeSave, setFreeSave] = useState(false);
+  const themeToDraw = activeCustom
+    ? freeSave
+      ? resolveTheme(withoutPro(activeCustom))
+      : resolveTheme(activeCustom, customThemes.activePhoto)
+    : theme;
+  // Photos, stickers and notes only appear on the wallpaper; fonts and blocks on both.
+  const proFeatures = proFeaturesOf(activeCustom).filter(
+    (f) => layout === 'wallpaper' || f === 'Extra font' || f === 'Block style'
+  );
+  // Open the Pro dialog as { view, features?, session? }. Opens by itself when Stripe
+  // Checkout sends the buyer back (?pro=paid&session=...).
+  const [proDialog, setProDialog] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('pro') === 'paid' && params.get('session')
+      ? { view: 'claim', session: params.get('session') }
+      : null;
+  });
   // A custom photo background still being prepared would be missing from a saved wallpaper.
   const photoPreparing = layout === 'wallpaper' && customThemes.activePhotoPending;
   const colors = getTheme(themeToDraw);
@@ -120,6 +143,12 @@ export default function App() {
   const openNewTheme = customThemes.canAddMore
     ? () => setStudio({ theme: themeFromPreset(theme, `My theme ${customThemes.themes.length + 1}`), isNew: true })
     : null;
+  useEffect(() => {
+    // Clear Checkout's return address (?pro=...) so a reload doesn't claim again.
+    if (new URLSearchParams(window.location.search).has('pro')) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
   useEffect(() => {
     // Clear the link's theme code from the address bar so a reload doesn't ask again.
     const clearHash = () => {
@@ -196,13 +225,21 @@ export default function App() {
       schedules: course.schedules.map((s, i) => (i === slotIndex ? { ...s, hidden: !s.hidden } : s)),
     }));
 
-  const handleExport = async () => {
-    if (photoPreparing) return;
+  // `free` (from the Pro dialog) saves the design with its Pro features left out.
+  const handleExport = async (free = false) => {
+    const withoutProFeatures = free === true;
+    if (photoPreparing && !withoutProFeatures) return;
+    if (proFeatures.length && !pro.isPro && !withoutProFeatures) {
+      trackEvent('pro-offer: save', 'Pro offered on save');
+      setProDialog({ view: 'offer', features: proFeatures });
+      return;
+    }
     // Commit the render that hides the selection outline before capturing,
     // so the exported image never shows which course was selected.
     flushSync(() => {
       setIsExporting(true);
       setExportError('');
+      setFreeSave(withoutProFeatures);
     });
     let file;
     try {
@@ -227,6 +264,7 @@ export default function App() {
       return;
     } finally {
       setIsExporting(false);
+      setFreeSave(false);
     }
     trackEvent(layout === 'wallpaper' ? 'saved-wallpaper' : 'saved-timetable', `Saved ${layout}`);
 
@@ -546,6 +584,18 @@ export default function App() {
           <p>
             Something not working? <ReportLink>Report a problem on GitHub</ReportLink>
           </p>
+          <p className="flex flex-wrap gap-x-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setProDialog({ view: pro.isPro ? 'unlocked' : 'offer' })}
+              className="font-medium text-teal underline-offset-4 hover:underline"
+            >
+              {pro.isPro ? 'SlipSnap Pro is unlocked' : 'SlipSnap Pro'}
+            </button>
+            <a href="terms.html" className="underline-offset-4 hover:underline">Terms</a>
+            <a href="refunds.html" className="underline-offset-4 hover:underline">Refunds</a>
+            <a href="privacy.html" className="underline-offset-4 hover:underline">Privacy</a>
+          </p>
         </div>
       </footer>
 
@@ -583,7 +633,21 @@ export default function App() {
           )}
           onSave={(t, photo) => customThemes.saveTheme(t, photo)}
           onDelete={customThemes.deleteTheme}
+          isPro={pro.isPro}
+          onGetPro={(features) => setProDialog({ view: 'offer', features })}
           onClose={() => setStudio(null)}
+        />
+      )}
+
+      {proDialog && (
+        <ProDialog
+          view={proDialog.view}
+          session={proDialog.session}
+          features={proDialog.features}
+          unlock={pro.unlock}
+          currentKey={pro.key}
+          onSaveWithout={proDialog.features?.length && !studio ? () => handleExport(true) : null}
+          onClose={() => setProDialog(null)}
         />
       )}
 

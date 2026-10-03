@@ -3,6 +3,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "slipsnap",
-  "compatibility_date": "2026-10-04",
+  "compatibility_date": "2026-10-01",
   "pages_build_output_dir": "./dist"
 }

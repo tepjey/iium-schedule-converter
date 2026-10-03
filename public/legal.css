@@ -1,0 +1,46 @@
+/* Shared look for terms.html, refunds.html and privacy.html. */
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --ink: #12201f;
+  --muted: #55625f;
+  --teal: #0f6b66;
+  --line: #dfe3dd;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1716;
+    --surface: #152120;
+    --ink: #e8eeec;
+    --muted: #a3b1ae;
+    --teal: #5fc4bc;
+    --line: #273634;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+}
+.home { color: var(--teal); font-weight: 600; text-decoration: none; }
+h1 { font-size: 1.9rem; line-height: 1.2; margin: 24px 0 4px; }
+.updated { color: var(--muted); margin: 0 0 24px; font-size: 0.9rem; }
+h2 { font-size: 1.15rem; margin: 32px 0 8px; }
+p, li { color: var(--ink); }
+ul { padding-left: 1.25rem; }
+a { color: var(--teal); }
+.box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+footer { margin-top: 48px; color: var(--muted); font-size: 0.875rem; }
+footer a { margin-right: 12px; }

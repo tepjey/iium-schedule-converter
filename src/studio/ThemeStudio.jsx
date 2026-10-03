@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Check, ChevronDown, Copy, Image, ImagePlus, LayoutGrid, Link2, Loader2, Palette, PanelTop, Smile, StickyNote, Trash2, Type, X,
+  Check, ChevronDown, Copy, Image, ImagePlus, LayoutGrid, Link2, Loader2, Palette, PanelTop, Smile, Sparkles, StickyNote, Trash2, Type, X,
 } from 'lucide-react';
 import { THEMES, lockScreenInsets } from '../utils/theme';
 import { StickerArt } from './Decor';
@@ -19,6 +19,7 @@ import {
 } from './themeModel';
 import { FONTS, blockBorders, blockLook, loadFont } from './styleModel';
 import { usePhoto } from './useCustomThemes';
+import { isProBlockStyle, isProFont, proFeaturesOf } from '../pro/proModel';
 
 const BASE_COLORS = [
   '#0f766e', '#2563eb', '#7c3aed', '#db2777', '#e11d48', '#ea580c',
@@ -40,6 +41,16 @@ const BLOCK_STYLES = [
 ];
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+
+// Marks a SlipSnap Pro feature. Hidden once Pro is unlocked.
+function ProBadge({ show = true }) {
+  if (!show) return null;
+  return (
+    <span className="ml-1 inline-block rounded bg-brass/15 px-1 py-px align-[0.1em] text-[0.625rem] leading-tight font-semibold tracking-wide text-brass uppercase">
+      Pro
+    </span>
+  );
+}
 
 function Segmented({ options, value, onChange, label }) {
   return (
@@ -163,7 +174,17 @@ function Slider({ label, value, min, max, onChange, format }) {
 
 // The Theme Studio: edit a custom theme with a live preview of the wallpaper.
 // `renderPreview(theme)` draws the student's own wallpaper with the draft theme.
-export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, onSave, onDelete, onClose }) {
+export default function ThemeStudio({
+  initialTheme,
+  isNew,
+  size,
+  renderPreview,
+  onSave,
+  onDelete,
+  onClose,
+  isPro = false,
+  onGetPro,
+}) {
   const dialogRef = useRef(null);
   const previewBoxRef = useRef(null);
   const fileRef = useRef(null);
@@ -179,6 +200,8 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
   const [photo] = usePhoto(draft, photoBlob);
   const photoUrl = photo?.url || '';
   const resolved = resolveTheme(draft, photo);
+  // Pro features can be tried here; saving an image with them needs Pro.
+  const proFeatures = isPro ? [] : proFeaturesOf(draft);
   const width = size.width / size.pixelRatio;
   const height = size.height / size.pixelRatio;
   const scale = box.width ? Math.min(box.width / width, box.height / height, 1) : 0;
@@ -397,6 +420,23 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
             </div>
 
             <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-5">
+              {proFeatures.length > 0 && onGetPro && (
+                <div className="flex items-start gap-3 rounded-lg border border-brass/40 bg-brass/10 p-3">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brass" />
+                  <p className="flex-1 text-[0.8125rem] text-ink">
+                    This design uses Pro: {proFeatures.join(', ').toLowerCase()}. Try it all here; saving the image
+                    needs Pro.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onGetPro(proFeatures)}
+                    className="shrink-0 rounded-md bg-teal px-2.5 py-1 text-[0.8125rem] font-semibold text-limestone hover:bg-teal-deep"
+                  >
+                    Get Pro
+                  </button>
+                </div>
+              )}
+
               {tab === 'colors' && (
                 <>
                   <Field label="Base color" hint="Every color is made from this one. Fine-tune them under Advanced.">
@@ -493,7 +533,7 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                     options={[
                       { id: 'solid', label: 'Solid' },
                       { id: 'gradient', label: 'Gradient' },
-                      { id: 'photo', label: 'Photo' },
+                      { id: 'photo', label: <>Photo<ProBadge show={!isPro} /></> },
                     ]}
                   />
 
@@ -662,7 +702,7 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                   />
                   {style.cardOpacity < 100 && background.type === 'photo' && (
                     <Toggle
-                      label="Frosted glass"
+                      label={<>Frosted glass<ProBadge show={!isPro} /></>}
                       hint="Blur the photo behind the card"
                       checked={style.cardFrost}
                       onChange={(v) => setStyle('cardFrost', v)}
@@ -747,6 +787,7 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                             </span>
                             <span className={`block px-0.5 pt-1.5 text-xs ${selected ? 'font-semibold text-ink' : 'text-muted'}`}>
                               {option.label}
+                              <ProBadge show={!isPro && isProBlockStyle(option.id)} />
                             </span>
                           </button>
                         );
@@ -791,7 +832,10 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                           >
                             {id === 'default' ? 'Aa' : 'Mon 10:00'}
                           </span>
-                          <span className="block text-[0.75rem] text-muted">{font.name}</span>
+                          <span className="block text-[0.75rem] text-muted">
+                            {font.name}
+                            <ProBadge show={!isPro && isProFont(id)} />
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -828,6 +872,7 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
                 <>
                   <p className="text-[0.8125rem] text-muted">
                     Drag on the preview to move. Drag the round handle to resize and turn.
+                    {!isPro && ' Stickers and notes are part of SlipSnap Pro.'}
                   </p>
 
                   {selected && (

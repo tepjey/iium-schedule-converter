@@ -25,3 +25,8 @@ dist-ssr
 
 # Confirmation slips contain matric and IC numbers; never commit them
 *.pdf
+
+# SlipSnap Pro signing key and local Cloudflare secrets; never commit them
+.pro-private-key.json
+.dev.vars
+.wrangler/
