@@ -96,16 +96,17 @@ function ThemeSwatch({ theme, selected, onSelect }) {
   );
 }
 
-export function ExportButton({ onExport, isExporting, layout, className = '' }) {
+// `preparing`: a custom theme's photo is still being prepared, so saving now would leave it out.
+export function ExportButton({ onExport, isExporting, preparing = false, layout, className = '' }) {
   return (
     <button
       type="button"
       onClick={onExport}
-      disabled={isExporting}
+      disabled={isExporting || preparing}
       className={`inline-flex items-center justify-center gap-2 rounded-lg bg-teal px-4 py-3 text-sm font-semibold text-limestone transition-colors hover:bg-teal-deep disabled:cursor-wait disabled:opacity-70 ${className}`}
     >
-      {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-      {isExporting ? 'Saving image…' : layout === 'wallpaper' ? 'Save wallpaper' : 'Save timetable'}
+      {isExporting || preparing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+      {isExporting ? 'Saving image…' : preparing ? 'Preparing photo…' : layout === 'wallpaper' ? 'Save wallpaper' : 'Save timetable'}
     </button>
   );
 }
@@ -114,6 +115,7 @@ export default function ControlPanel({
   courses,
   activeCourseId,
   onSelectCourse,
+  photoPreparing = false,
   onColorChange,
   onShortNameChange,
   onToggleSlot,
@@ -442,7 +444,7 @@ export default function ControlPanel({
       </Section>
 
       <div className="hidden pt-1 pb-5 lg:block">
-        <ExportButton onExport={onExport} isExporting={isExporting} layout={layout} className="w-full" />
+        <ExportButton onExport={onExport} isExporting={isExporting} preparing={photoPreparing} layout={layout} className="w-full" />
         {exportError && (
           <p role="alert" className="mt-3 text-sm text-danger">
             {exportError} <ReportLink fields={{ result: exportError }}>Report it</ReportLink>

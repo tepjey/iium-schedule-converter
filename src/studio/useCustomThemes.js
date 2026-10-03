@@ -25,18 +25,21 @@ const store = (key, value) => {
   }
 };
 
-// The background photo of `theme`, with its blur and brightness applied:
-// { url, width, height, frostUrl }, or null. `frostUrl` is a much blurrier copy for a
-// see-through card to show behind it, made only when the theme's card needs one.
-// `version` changes when a new photo is saved for the same theme.
+// The background photo of `theme`, with its blur and brightness applied, as
+// [photo, pending]. photo is { url, width, height, frostUrl } or null; pending is true
+// while it's being prepared for the current settings, so saving can wait for it.
+// `frostUrl` is a much blurrier copy for a see-through card to show behind it, made only
+// when the theme's card needs one. `version` changes when a new photo is saved.
 export function usePhoto(theme, photoBlob, version = 0) {
   // Tagged with its theme, so switching themes never shows the previous theme's photo.
-  const [photo, setPhoto] = useState({ id: '', value: null });
+  const [photo, setPhoto] = useState({ id: '', key: '', value: null });
   const isPhoto = theme?.background.type === 'photo';
   const id = theme?.id;
   const { blur, brightness } = theme?.background.photo || {};
   const style = theme?.style;
   const needsFrost = Boolean(isPhoto && style && style.cardOpacity < 100 && style.cardFrost);
+  // What the photo was prepared for; a different key means it's out of date.
+  const key = `${id}|${blur}|${brightness}|${needsFrost}|${version}|${photoBlob ? photoBlob.size : ''}`;
 
   useEffect(() => {
     if (!isPhoto) return undefined;
@@ -44,22 +47,27 @@ export function usePhoto(theme, photoBlob, version = 0) {
     // Wait for the blur and brightness sliders to settle before redrawing the photo.
     const timer = setTimeout(async () => {
       const blob = photoBlob || (await loadPhoto(id));
-      if (!blob || cancelled) return;
+      if (cancelled) return;
+      let value = null;
       try {
-        const main = await renderPhoto(blob, { blur, brightness });
-        const frost = needsFrost ? await renderPhoto(blob, { blur: Math.min(20, blur + 12), brightness }) : null;
-        if (!cancelled) setPhoto({ id, value: { ...main, frostUrl: frost?.url || '' } });
+        if (blob) {
+          const main = await renderPhoto(blob, { blur, brightness });
+          const frost = needsFrost ? await renderPhoto(blob, { blur: Math.min(20, blur + 12), brightness }) : null;
+          value = { ...main, frostUrl: frost?.url || '' };
+        }
       } catch {
         // An unreadable photo leaves the theme's solid color showing.
       }
+      // Settled even with no photo, so a missing one never holds up saving.
+      if (!cancelled) setPhoto({ id, key, value });
     }, 120);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [isPhoto, id, blur, brightness, needsFrost, photoBlob, version]);
+  }, [isPhoto, id, blur, brightness, needsFrost, photoBlob, version, key]);
 
-  return isPhoto && photo.id === id ? photo.value : null;
+  return [isPhoto && photo.id === id ? photo.value : null, isPhoto && photo.key !== key];
 }
 
 export function useCustomThemes() {
@@ -78,7 +86,7 @@ export function useCustomThemes() {
   useEffect(() => store(ACTIVE_KEY, activeId), [activeId]);
 
   const active = themes.find((t) => t.id === activeId) || null;
-  const activePhoto = usePhoto(active, null, photoVersion);
+  const [activePhoto, activePhotoPending] = usePhoto(active, null, photoVersion);
 
   // Save a new or edited theme (and its new photo, if one was picked) and use it.
   const saveTheme = async (theme, photoBlob = null) => {
@@ -105,6 +113,7 @@ export function useCustomThemes() {
     themes,
     active,
     activePhoto,
+    activePhotoPending,
     select: setActiveId,
     saveTheme,
     deleteTheme,

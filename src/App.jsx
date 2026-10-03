@@ -105,6 +105,8 @@ export default function App() {
   const customThemes = useCustomThemes();
   const activeCustom = customThemes.active;
   const themeToDraw = activeCustom ? resolveTheme(activeCustom, customThemes.activePhoto) : theme;
+  // A custom photo background still being prepared would be missing from a saved wallpaper.
+  const photoPreparing = layout === 'wallpaper' && customThemes.activePhotoPending;
   const colors = getTheme(themeToDraw);
   // The theme being edited in the studio: { theme, isNew }.
   const [studio, setStudio] = useState(null);
@@ -191,6 +193,7 @@ export default function App() {
     }));
 
   const handleExport = async () => {
+    if (photoPreparing) return;
     // Commit the render that hides the selection outline before capturing,
     // so the exported image never shows which course was selected.
     flushSync(() => {
@@ -443,6 +446,7 @@ export default function App() {
                   onRemoveSlot={handleRemoveSlot}
                   onExport={handleExport}
                   isExporting={isExporting}
+                  photoPreparing={photoPreparing}
                   exportError={exportError}
                   fontFamily={fontFamily}
                   setFontFamily={setFontFamily}
@@ -491,7 +495,7 @@ export default function App() {
                   {exportError} <ReportLink fields={{ result: exportError }}>Report it</ReportLink>
                 </p>
               )}
-              <ExportButton onExport={handleExport} isExporting={isExporting} layout={layout} className="w-full" />
+              <ExportButton onExport={handleExport} isExporting={isExporting} preparing={photoPreparing} layout={layout} className="w-full" />
             </div>
           </>
         )}

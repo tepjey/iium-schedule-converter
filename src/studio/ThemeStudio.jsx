@@ -176,7 +176,7 @@ export default function ThemeStudio({ initialTheme, isNew, size, renderPreview, 
   const [copied, setCopied] = useState(false);
   const [box, setBox] = useState({ width: 0, height: 0 });
 
-  const photo = usePhoto(draft, photoBlob);
+  const [photo] = usePhoto(draft, photoBlob);
   const photoUrl = photo?.url || '';
   const resolved = resolveTheme(draft, photo);
   const width = size.width / size.pixelRatio;
