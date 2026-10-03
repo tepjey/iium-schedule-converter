@@ -6,7 +6,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   // promo-video is a separate Remotion project with its own dependencies.
-  globalIgnores(['dist', 'promo-video']),
+  globalIgnores(['dist', 'promo-video', '.wrangler']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
