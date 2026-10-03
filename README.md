@@ -9,7 +9,7 @@
 [![Deploy](https://github.com/tepjey/iium-schedule-converter/actions/workflows/deploy.yml/badge.svg)](https://github.com/tepjey/iium-schedule-converter/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-0f6b66.svg)](LICENSE)
 [![Made with React](https://img.shields.io/badge/React-19-0f6b66?logo=react&logoColor=white)](https://react.dev)
-[![Buy me a coffee](https://img.shields.io/badge/Buy_me_a_coffee-c9a46a?logo=buymeacoffee&logoColor=white)](https://buymeacoffee.com/athifuzair)
+[![Support on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-c9a46a?logo=kofi&logoColor=white)](https://ko-fi.com/athifuzair)
 
 <img src="public/og-image.png" alt="IIUM Schedule Converter: a confirmation slip turned into a weekly timetable on a phone lock screen" width="720" />
 
@@ -101,7 +101,7 @@ Reports of slips that don't read correctly are the most helpful contribution, an
 
 ## Supporting the project
 
-IIUM Schedule Converter is free for every IIUM student, and it always will be. If it saved you time and you'd like to say thanks, you can [buy me a coffee](https://buymeacoffee.com/athifuzair). It's completely optional; telling a friend about the site or reporting a slip that didn't read correctly helps just as much.
+IIUM Schedule Converter is free for every IIUM student, and it always will be. If it saved you time and you'd like to say thanks, you can [buy me a coffee on Ko-fi](https://ko-fi.com/athifuzair). It's completely optional; telling a friend about the site or reporting a slip that didn't read correctly helps just as much.
 
 ## Built with
 
