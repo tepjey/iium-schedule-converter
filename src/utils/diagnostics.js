@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => recordError(event.reason));
 }
 
-// "fn@https://tepjey.github.io/iium-schedule-converter/assets/pdf-Ab12.js:3:4567"
+// "fn@https://slipsnap.pages.dev/assets/pdf-Ab12.js:3:4567"
 // becomes "fn@pdf-Ab12.js:3:4567". The file name's hash identifies the deployed build.
 const shortenStack = (stack) =>
   String(stack)

@@ -2,6 +2,9 @@
 // Leave empty to hide the credit line.
 export const GITHUB_USERNAME = 'tepjey';
 
+// The site's address, for links that must point at the live site (e.g. from the beta).
+export const SITE_URL = 'https://slipsnap.pages.dev/';
+
 // A Ko-fi tip page for students who want to support the project, shown in the footer.
 // Leave empty to hide the link.
 export const SUPPORT_URL = 'https://ko-fi.com/athifuzair';

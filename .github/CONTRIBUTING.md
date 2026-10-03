@@ -1,4 +1,4 @@
-# Contributing to IIUM Schedule Converter
+# Contributing to SlipSnap
 
 Thanks for helping! Most of the value in this project comes from students reporting slips that don't read correctly, so you don't need to write code to contribute.
 

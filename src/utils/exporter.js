@@ -18,7 +18,7 @@ export const isInAppBrowser = () =>
 // modern CSS such as Tailwind v4's oklch() colors that html2canvas cannot parse.
 export const renderImage = async (
   elementRef,
-  { filename = 'IIUM_Timetable.png', pixelRatio = 3, backgroundColor, outputWidth, outputHeight } = {}
+  { filename = 'SlipSnap_Timetable.png', pixelRatio = 3, backgroundColor, outputWidth, outputHeight } = {}
 ) => {
   const node = elementRef.current;
   if (!node) throw new Error('Nothing to save yet');

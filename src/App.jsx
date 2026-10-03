@@ -15,7 +15,7 @@ import SharedThemeDialog from './studio/SharedThemeDialog';
 import ThemeStudio from './studio/ThemeStudio';
 import { resolveTheme, themeFromHash, themeFromPreset } from './studio/themeModel';
 import { useCustomThemes } from './studio/useCustomThemes';
-import { GITHUB_USERNAME, IS_BETA, SUPPORT_URL } from './config';
+import { GITHUB_USERNAME, IS_BETA, SITE_URL, SUPPORT_URL } from './config';
 import { failureReason, trackEvent } from './utils/analytics';
 import { shouldAnnounce } from './utils/announcement';
 import { shouldNudge } from './utils/supportNudge';
@@ -209,13 +209,13 @@ export default function App() {
       file =
         layout === 'wallpaper'
           ? await renderImage(wallpaperRef, {
-              filename: `IIUM_Wallpaper_${wallpaperSize.width}x${wallpaperSize.height}.png`,
+              filename: `SlipSnap_Wallpaper_${wallpaperSize.width}x${wallpaperSize.height}.png`,
               pixelRatio: wallpaperSize.pixelRatio,
               outputWidth: wallpaperSize.width,
               outputHeight: wallpaperSize.height,
             })
           : await renderImage(timetableRef, {
-              filename: 'IIUM_Timetable.png',
+              filename: 'SlipSnap_Timetable.png',
               pixelRatio: 3,
               backgroundColor: colors.background,
             });
@@ -276,7 +276,7 @@ export default function App() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
           <div className="flex items-center gap-2.5">
             <Khatam size={22} strokeWidth={7} color="var(--color-teal)" />
-            <span className="font-kufi text-xl font-medium tracking-tight whitespace-nowrap text-ink">IIUM Timetable</span>
+            <span className="font-kufi text-xl font-medium tracking-tight whitespace-nowrap text-ink">SlipSnap</span>
             {IS_BETA && (
               <span className="rounded-full bg-brass/15 px-2 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-brass uppercase">
                 Beta
@@ -310,8 +310,8 @@ export default function App() {
 
       {IS_BETA && (
         <div className="border-b border-brass/30 bg-brass/10 px-5 py-2 text-center text-[0.8125rem] text-ink sm:px-8">
-          You’re trying IIUM Timetable 2.0 early. Things may change or break.{' '}
-          <a href="../" className="font-medium text-teal underline underline-offset-4 hover:text-teal-deep">
+          You’re trying SlipSnap 2.0 early. Things may change or break.{' '}
+          <a href={SITE_URL} className="font-medium text-teal underline underline-offset-4 hover:text-teal-deep">
             Go to the regular site
           </a>
         </div>

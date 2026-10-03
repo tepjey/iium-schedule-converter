@@ -3,10 +3,11 @@
 // the earlier updates, listed on its last card.
 export const ANNOUNCEMENT = {
   id: '2.0',
-  title: 'IIUM Timetable 2.0',
+  title: 'SlipSnap 2.0',
   // A launch: first-time visitors see it too, not only returning ones.
   forEveryone: true,
   alsoNew: [
+    'IIUM Timetable is now SlipSnap, at slipsnap.pages.dev',
     'Choose your tutorial times and hide the rest',
     'Add class times your slip doesn’t have',
     'Classes at the same time sit side by side',

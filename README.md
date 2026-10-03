@@ -1,21 +1,23 @@
 <div align="center">
 
-# IIUM Schedule Converter
+# SlipSnap
 
 **Turn your IIUM confirmation slip into a weekly timetable and phone wallpaper.**
 
-[![Open the website](https://img.shields.io/badge/Open_the_website-0f6b66?style=for-the-badge)](https://tepjey.github.io/iium-schedule-converter/)
+*Formerly IIUM Schedule Converter.*
+
+[![Open SlipSnap](https://img.shields.io/badge/Open_SlipSnap-0f6b66?style=for-the-badge)](https://slipsnap.pages.dev/)
 
 [![Deploy](https://github.com/tepjey/iium-schedule-converter/actions/workflows/deploy.yml/badge.svg)](https://github.com/tepjey/iium-schedule-converter/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-0f6b66.svg)](LICENSE)
 [![Made with React](https://img.shields.io/badge/React-19-0f6b66?logo=react&logoColor=white)](https://react.dev)
 [![Support on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-c9a46a?logo=kofi&logoColor=white)](https://ko-fi.com/athifuzair)
 
-<img src="public/og-image.png" alt="IIUM Schedule Converter: a confirmation slip turned into a weekly timetable on a phone lock screen" width="720" />
+<img src="public/og-image.png" alt="SlipSnap: an IIUM confirmation slip turned into a weekly timetable on a phone lock screen" width="720" />
 
 </div>
 
-IIUM Schedule Converter (also called IIUM Timetable) reads the Course Registration Confirmation Slip you download from i-Ma'luum and lays your classes out as a weekly schedule. You can recolor each course and save it as a timetable image or as a lock screen wallpaper sized for your phone or iPad.
+SlipSnap (formerly IIUM Schedule Converter, also called IIUM Timetable) reads the IIUM Course Registration Confirmation Slip you download from i-Ma'luum and lays your classes out as a weekly schedule. You can recolor each course and save it as a timetable image or as a lock screen wallpaper sized for your phone or iPad.
 
 > [!NOTE]
 > This is an unofficial student project and is not affiliated with the International Islamic University Malaysia (IIUM).
@@ -45,7 +47,7 @@ IIUM Schedule Converter (also called IIUM Timetable) reads the Course Registrati
 
 1. Log in to **i-Ma'luum**. On the home page, find **Favourite Links**.
 2. Select **Confirmation Slip**, then **Print**, and save it as a PDF.
-3. Open **[the website](https://tepjey.github.io/iium-schedule-converter/)** and upload that PDF.
+3. Open **[SlipSnap](https://slipsnap.pages.dev/)** and upload that PDF.
 4. Pick a layout, theme and colors, then tap **Save**.
 
 On iPhone, choose **Save Image** in the share sheet to put the wallpaper in Photos. Then open **Settings → Wallpaper** to set it.
@@ -101,7 +103,7 @@ Reports of slips that don't read correctly are the most helpful contribution, an
 
 ## Supporting the project
 
-IIUM Schedule Converter is free for every IIUM student, and it always will be. If it saved you time and you'd like to say thanks, you can [buy me a coffee on Ko-fi](https://ko-fi.com/athifuzair). It's completely optional; telling a friend about the site or reporting a slip that didn't read correctly helps just as much.
+SlipSnap is free for every IIUM student, and it always will be. If it saved you time and you'd like to say thanks, you can [buy me a coffee on Ko-fi](https://ko-fi.com/athifuzair). It's completely optional; telling a friend about the site or reporting a slip that didn't read correctly helps just as much.
 
 ## Built with
 

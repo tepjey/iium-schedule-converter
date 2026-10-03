@@ -5,8 +5,8 @@ import ReportLink from './ReportLink';
 // ("IIUM schedule", "timetable", "i-Ma'luum", "confirmation slip").
 const QUESTIONS = [
   {
-    q: 'What is the IIUM Schedule Converter?',
-    a: 'A free tool that turns the Course Registration Confirmation Slip from i-Ma’luum into a weekly class timetable. You can recolor each course and save your IIUM schedule as an image or as a lock screen wallpaper for your phone or iPad.',
+    q: 'What is SlipSnap?',
+    a: 'SlipSnap (formerly the IIUM Schedule Converter) is a free tool that turns the Course Registration Confirmation Slip from i-Ma’luum into a weekly class timetable. You can recolor each course and save your IIUM schedule as an image or as a lock screen wallpaper for your phone or iPad.',
   },
   {
     q: 'Where do I find my confirmation slip?',
@@ -30,7 +30,7 @@ export default function Faq() {
   return (
     <section aria-labelledby="faq-title" className="border-t border-line py-10 lg:py-14">
       <h2 id="faq-title" className="font-kufi text-2xl font-semibold text-ink sm:text-[1.75rem]">
-        Questions about the IIUM schedule converter
+        Questions about SlipSnap, the IIUM schedule converter
       </h2>
       <dl className="mt-6 grid gap-x-12 gap-y-6 lg:grid-cols-2">
         {QUESTIONS.map(({ q, a }) => (

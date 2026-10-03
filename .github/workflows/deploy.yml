@@ -1,11 +1,13 @@
-# Builds the site and publishes it to GitHub Pages on every push to main or v2.
-# One-time setup: repo Settings > Pages > Build and deployment > Source: GitHub Actions,
-# and allow both branches under Settings > Environments > github-pages.
+# Publishes SlipSnap to Cloudflare Pages on every push to main or v2.
+#   main -> https://slipsnap.pages.dev (the live site)
+#   v2   -> https://v2.slipsnap.pages.dev (the beta, built with VITE_CHANNEL=beta)
+# One-time setup: add a Cloudflare API token with "Cloudflare Pages: Edit" permission as
+# the repo secret CLOUDFLARE_API_TOKEN (gh secret set CLOUDFLARE_API_TOKEN).
 #
-# The live site is always built from main. If a v2 branch exists, it is built into
-# /beta/ in the same upload, so the beta can be tried without touching the live site.
-# A failing beta build is skipped and never blocks the live site from deploying.
-name: Deploy to GitHub Pages
+# The old GitHub Pages address (tepjey.github.io/iium-schedule-converter) now only
+# redirects to SlipSnap, carrying saved settings over. Its pages live in old-site/ and are
+# republished from main.
+name: Deploy
 
 on:
   push:
@@ -17,64 +19,54 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
+env:
+  CLOUDFLARE_ACCOUNT_ID: 38cd23a6265ab1d5fd38add818066c3e
 
 jobs:
-  build:
+  cloudflare:
     runs-on: ubuntu-latest
+    concurrency:
+      group: cloudflare-${{ github.ref_name }}
+      cancel-in-progress: true
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'beta' }}
+      url: ${{ github.ref_name == 'main' && 'https://slipsnap.pages.dev' || format('https://{0}.slipsnap.pages.dev', github.ref_name) }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
-          path: site
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: site/package-lock.json
-      - name: Build the live site (main)
-        working-directory: site
-        run: |
-          npm ci
-          npm run lint
-          npm run build
-
-      - name: Check for a v2 branch
-        id: beta
-        run: |
-          if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}.git" v2 >/dev/null; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/checkout@v4
-        if: steps.beta.outputs.exists == 'true'
-        with:
-          ref: v2
-          path: beta
-      - name: Build the beta (v2) into /beta/
-        if: steps.beta.outputs.exists == 'true'
-        continue-on-error: true
-        working-directory: beta
+      - run: npm ci
+      - run: npm run lint
+      - name: Build
         env:
-          VITE_CHANNEL: beta
-        run: |
-          npm ci
-          npm run lint
-          npm run build
-          cp -r dist ../site/dist/beta
+          VITE_CHANNEL: ${{ github.ref_name == 'v2' && 'beta' || '' }}
+        run: npm run build
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler pages deploy --branch "${{ github.ref_name }}"
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/dist
-
-  deploy:
-    needs: build
+  old-site:
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - name: Publish the redirect at every old address
+        run: |
+          mkdir -p old-site/beta
+          cp old-site/index.html old-site/beta/index.html
+          cp old-site/index.html old-site/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: old-site
       - id: deployment
         uses: actions/deploy-pages@v4

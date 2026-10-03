@@ -1,6 +1,6 @@
 {
-  "name": "IIUM Timetable",
-  "short_name": "Timetable",
+  "name": "SlipSnap",
+  "short_name": "SlipSnap",
   "description": "Turn your IIUM confirmation slip into a weekly timetable and phone wallpaper.",
   "start_url": "./",
   "scope": "./",

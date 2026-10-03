@@ -212,7 +212,7 @@ const CARDS = [
   {
     id: 'launch',
     Art: LaunchArt,
-    title: 'Welcome to IIUM Timetable 2.0',
+    title: 'Welcome to SlipSnap 2.0',
     body: 'Your timetable, your style. Design a wallpaper that’s completely yours in the new Theme Studio.',
   },
   {
