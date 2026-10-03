@@ -2,6 +2,10 @@
 // Leave empty to hide the credit line.
 export const GITHUB_USERNAME = 'tepjey';
 
+// A tip page for students who want to support the project, shown in the footer.
+// Leave empty to hide the link.
+export const SUPPORT_URL = 'https://buymeacoffee.com/athifuzair';
+
 // Your GoatCounter site code (the "mysite" in mysite.goatcounter.com), for the
 // visitor counter. Leave empty to turn analytics off.
 export const GOATCOUNTER_CODE = 'tepjey';
