@@ -110,6 +110,10 @@ export default function App() {
   const [studio, setStudio] = useState(null);
   // A theme opened from a share link, waiting for the student to add it.
   const [sharedTheme, setSharedTheme] = useState(() => themeFromHash(window.location.hash));
+  // A new custom theme, starting from the built-in one in use.
+  const openNewTheme = customThemes.canAddMore
+    ? () => setStudio({ theme: themeFromPreset(theme, `My theme ${customThemes.themes.length + 1}`), isNew: true })
+    : null;
   useEffect(() => {
     // Clear the link's theme code from the address bar so a reload doesn't ask again.
     const clearHash = () => {
@@ -455,15 +459,7 @@ export default function App() {
                   customThemes={customThemes.themes.map((t) => ({ id: t.id, ...resolveTheme(t) }))}
                   activeCustomId={activeCustom?.id || ''}
                   onSelectCustom={customThemes.select}
-                  onCreateCustom={
-                    customThemes.canAddMore
-                      ? () =>
-                          setStudio({
-                            theme: themeFromPreset(theme, `My theme ${customThemes.themes.length + 1}`),
-                            isNew: true,
-                          })
-                      : null
-                  }
+                  onCreateCustom={openNewTheme}
                   onEditCustom={(id) => {
                     const existing = customThemes.themes.find((t) => t.id === id);
                     if (existing) setStudio({ theme: existing, isNew: false });
@@ -527,7 +523,9 @@ export default function App() {
         </div>
       </footer>
 
-      {showWhatsNew && !sharedTheme && <WhatsNew onClose={() => setShowWhatsNew(false)} />}
+      {showWhatsNew && !sharedTheme && (
+        <WhatsNew onClose={() => setShowWhatsNew(false)} onOpenStudio={courses.length > 0 ? openNewTheme : null} />
+      )}
 
       {sharedTheme && (
         <SharedThemeDialog
