@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IIUM Schedule Converter is now SlipSnap</title>
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://slipsnap.pages.dev/" />
+    <!--
+      The old address (tepjey.github.io/iium-schedule-converter). Sends visitors to SlipSnap
+      and brings their saved settings along: browsers keep settings per address, so they go
+      in the #migrate=... part of the link, which is never sent to any server. Theme share
+      links (#theme=...) are passed on as they are. The beta (/beta/) goes to the v2 preview.
+      This same file is published as index.html, beta/index.html and 404.html.
+    -->
+    <script>
+      (function () {
+        var beta = /\/beta(\/|$)/.test(location.pathname);
+        var target = beta ? 'https://v2.slipsnap.pages.dev/' : 'https://slipsnap.pages.dev/';
+        var hash = '';
+        try {
+          if (location.hash.indexOf('#theme=') === 0) {
+            hash = location.hash;
+          } else {
+            var saved = {};
+            var found = false;
+            for (var i = 0; i < localStorage.length; i++) {
+              var key = localStorage.key(i);
+              if (key && key.indexOf('iium.') === 0) {
+                saved[key] = localStorage.getItem(key);
+                found = true;
+              }
+            }
+            if (found) {
+              var bytes = new TextEncoder().encode(JSON.stringify(saved));
+              var binary = '';
+              for (var j = 0; j < bytes.length; j++) binary += String.fromCharCode(bytes[j]);
+              hash = '#migrate=' + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            }
+          }
+        } catch (e) {
+          // Settings can't be read (private mode, blocked storage): go without them.
+        }
+        location.replace(target + hash);
+      })();
+    </script>
+    <noscript><meta http-equiv="refresh" content="0; url=https://slipsnap.pages.dev/" /></noscript>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #f6f7f4;
+        color: #12201f;
+        font: 16px/1.5 system-ui, sans-serif;
+        text-align: center;
+        padding: 0 16px;
+      }
+      a { color: #0f6b66; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <p>IIUM Schedule Converter is now <strong>SlipSnap</strong>.<br />
+      Taking you to <a href="https://slipsnap.pages.dev/">slipsnap.pages.dev</a>…</p>
+  </body>
+</html>
