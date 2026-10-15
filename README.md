@@ -47,10 +47,11 @@ Anyone can try every Pro feature; Pro is only needed to save an image that uses 
 
 ## How to use
 
-1. Log in to **[i-Ma'luum](https://imaluum.iium.edu.my/home)**. On the home page, find **Favourite Links**.
-2. Select **Confirmation Slip**, then **Print**, and save it as a PDF.
-3. Open **[SlipSnap](https://slipsnap.pages.dev/)** and upload that PDF.
-4. Pick a layout, theme and colors, then tap **Save**.
+1. Open the **[confirmation slip page](https://imaluum.iium.edu.my/MyAcademic/confirmation-sem)** and log in to **i-Ma'luum** if asked.
+2. Choose your session and semester, then click **Submit**.
+3. Click **Print** and save it as a PDF.
+4. Open **[SlipSnap](https://slipsnap.pages.dev/)** and upload that PDF.
+5. Pick a layout, theme and colors, then tap **Save**.
 
 On iPhone, choose **Save Image** in the share sheet to put the wallpaper in Photos. Then open **Settings → Wallpaper** to set it.
 
