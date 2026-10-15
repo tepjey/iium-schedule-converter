@@ -76,4 +76,4 @@ SlipSnap is free for every IIUM student, and it always will be. If it saved you 
 
 ## License
 
-All rights reserved © 2026 [tepjey](https://github.com/tepjey).
+All rights reserved © 2026 [tepjey](https://github.com/tepjey) · [LinkedIn](https://www.linkedin.com/in/a%E2%80%99thif-uzair-5194a0389/).
